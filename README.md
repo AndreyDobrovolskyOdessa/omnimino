@@ -31,18 +31,32 @@ If Aperture is non-zero, Metric=1 means square aperture with side length of valu
 Examples of Aperture=5
 
 
-Metric=0       Metric=1
+Metric=1
 
 
-1 1 1 1 1      0 0 1 0 0
+1 1 1 1 1
 
-1 1 1 1 1      0 1 1 1 0
+1 1 1 1 1
 
-1 1 1 1 1      1 1 1 1 1
+1 1 1 1 1
 
-1 1 1 1 1      0 1 1 1 0
+1 1 1 1 1
 
-1 1 1 1 1      0 0 1 0 0
+1 1 1 1 1
+
+
+Metric=0
+
+
+0 0 1 0 0
+
+0 1 1 1 0
+
+1 1 1 1 1
+
+0 1 1 1 0
+
+0 0 1 0 0
 
 
 So parameters, influencing random figures sequence are:

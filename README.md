@@ -1,21 +1,21 @@
-# omnimino
+# Omnimino
 
 Console game inspired by polymino puzzle
 
 
-# dependency
+## dependency
 
 ncurses(w)
 
 
-# configurable prior to compile
+## configurable prior to compile
 
 #define MAX_FIGURE_WEIGHT 8
 
 #define MAX_GLASS_HEIGHT 256
 
 
-# gameplay
+## gameplay
 
 Random sequence of figures is placed inside rectangular glass, using movements, rotations and mirror (vertical).
 
@@ -33,41 +33,28 @@ Examples of Aperture=5
 
 Metric=1
 
-
-1 1 1 1 1
-
-1 1 1 1 1
-
-1 1 1 1 1
-
-1 1 1 1 1
-
+1 1 1 1 1\
+1 1 1 1 1\
+1 1 1 1 1\
+1 1 1 1 1\
 1 1 1 1 1
 
 
 Metric=0
 
-
-0 0 1 0 0
-
-0 1 1 1 0
-
-1 1 1 1 1
-
-0 1 1 1 0
-
+0 0 1 0 0\
+0 1 1 1 0\
+1 1 1 1 1\
+0 1 1 1 0\
 0 0 1 0 0
 
 
 So parameters, influencing random figures sequence are:
 
 
-Aperture (1-MAX_FIGURE_WEIGHT)
-
-Metric (0,1)
-
-FigureWeightMax (1-MAX_FIGURE_WEIGHT)
-
+Aperture (1-MAX_FIGURE_WEIGHT)\
+Metric (0,1)\
+FigureWeightMax (1-MAX_FIGURE_WEIGHT)\
 FigureWeightMin (1-FigureWeightMax)
 
 
@@ -80,22 +67,17 @@ Gravity,SingleLayer,FullRowClear and Goal.
 Goal may be:
 
 
-0 - fill glass in order to minimize empty cells number
-
-1 - touch the glass bottom (means glass prefill, see later)
-
+0 - fill glass in order to minimize empty cells number\
+1 - touch the glass bottom (means glass prefill, see later)\
 2 - get flat upper row.
 
 
 The next parameter group describes glass:
 
 
-GlassWidth
-
-GlassHeight
-
-GlassFillLevel
-
+GlassWidth\
+GlassHeight\
+GlassFillLevel\
 GlassFillRatio (number of blocks in each prefilled row)
 
 
@@ -109,10 +91,9 @@ Sum of all figures' weights is >= (GlassWidth * GlassHeight) - (FillLevel * Fill
 
 Game ends if the figure was placed outside the glass (at least one of figure cubes is above the glass top) in any case. Or if additional goal (touch or flat) is achieved.
 
-# Score
+## Score
 
 Depends on goal.
-
 
 - Fill. Number of empty cells in the glass
 
@@ -123,38 +104,24 @@ Depends on goal.
 
 Score is the less, the better.
 
-# Commands
+## Controls
 
-
-h - move left
-
-l - move right
-
-j - move down
-
+h - move left\
+l - move right\
+j - move down\
 k - move up
 
-
-a - rotate ccw
-
-g - rotate cw
-
+a - rotate ccw\
+g - rotate cw\
 s,d - vertical mirror
-
 
 SPACE - drop figure
 
-
-u - undo move
-
-r - redo move
-
-^ - go to first figure
-
+u - undo move\
+r - redo move\
+^ - go to first figure\
 $ - go to last modified figure
 
-
-q - exit without save
-
+q - exit without save\
 x - exit with save
 

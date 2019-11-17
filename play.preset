@@ -1,0 +1,5 @@
+#!/bin/sh
+ls p*.mino | grep -n .
+read Num
+./omnimino $(ls p*.mino | sed -n "$Num"p)
+

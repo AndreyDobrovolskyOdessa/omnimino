@@ -3,6 +3,11 @@
 Console game inspired by polymino puzzle
 
 
+## Usage
+
+omnimino infile
+
+
 ## dependency
 
 ncurses(w)

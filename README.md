@@ -117,8 +117,8 @@ j - move down\
 k - move up
 
 a - rotate ccw\
-g - rotate cw\
 s,d - vertical mirror
+f - rotate cw\
 
 SPACE - drop figure
 
@@ -129,4 +129,38 @@ $ - go to last modified figure
 
 q - exit without save\
 x - exit with save
+
+## Format of .mino record file
+
+Line No    Parameter or data
+
+1          Aperture\
+2          Metric\
+3          FigureWeightMax\
+4          FigureWeightMin\
+5          Gravity\
+6          SingleLayer\
+7          FullRowClear\
+8          Goal\
+9          GlassWidth\
+10         GlassHeight\
+11         FillLevel\
+12         FillRatio\
+13         SlotsUnique\
+14         ParentName\
+15         Figure number\
+16         Current figure\
+17         Glass prefill rows, delimited with ;\
+18         Figures' first block numbers, deliimited with ;\
+19         Blocks coordinates. x,y;\
+20         Player $USER\
+21         Time of save\
+
+All data are in decimal representation.
+
+The name of game record file is md5sum of its content.\
+If file name is not equal to md5sum of its content, it is considered as preset for new game.\
+For preset files parameters may be commented, without any delimiters. Only the first word is interpreted as data, the rest of line is ignored.\
+play.preset assumes preset files to be names as p*.mino
+
 

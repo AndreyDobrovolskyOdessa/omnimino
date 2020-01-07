@@ -1,5 +1,10 @@
 #!/bin/sh
-ls p*.mino | grep -n .
-read Num
+if  [ $# -gt 0 ]
+then
+  Num=$1
+else
+  ls p*.mino | sed 's/^/\t/' | grep -n .
+  read Num
+fi
 ./omnimino $(ls p*.mino | sed -n "$Num"p)
 

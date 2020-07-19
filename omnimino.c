@@ -63,24 +63,24 @@ enum GoalTypes {
 
 **************************************/
 
-int FigureWeightMax=4;
-int FigureWeightMin=4;
-int Aperture=0;
+int FigureWeightMax;
+int FigureWeightMin;
+int Aperture;
 
-int FigureMetric=0; /* 0 - abs(x1-x0)+abs(y1-y0), 1 - max(abs(x1-x0),abs(y1-y0)) */
+int FigureMetric; /* 0 - abs(x1-x0)+abs(y1-y0), 1 - max(abs(x1-x0),abs(y1-y0)) */
 
-int Gravity=1;
-int FreeMove=1; /* non-free move actually */
-int FullRowClear=1;
+int Gravity;
+int FreeMove; /* non-free move actually */
+int FullRowClear;
 
-int Goal=FILL_GOAL;
+int Goal;
 
-int GlassWidth=10;
-int GlassHeightBuf=10; /* can change during game if FullRowClear */
-int GlassFillLevel=0;
-int GlassFillRatio=6; /* < GlassWidth */
+int GlassWidth;
+int GlassHeightBuf; /* can change during game if FullRowClear */
+int GlassFillLevel;
+int GlassFillRatio; /* < GlassWidth */
 
-int FigureSlotsUnique=1;
+int FigureSlotsUnique;
 
 /**************************************
 
@@ -131,10 +131,6 @@ int GameModified=0;
            Basic game functions
 
 **************************************/
-
-#define X(i) (Block[i].x>>1)
-#define Y(i) (Block[i].y>>1)
-
 
 void ScaleUp(struct Coord *B,int *V){
   (B->x)<<=1; (B->y)<<=1;
@@ -428,13 +424,6 @@ int SelectGlassRow(void){
 }
 
 void DrawBlock(struct Coord *B,int *GRN){
-/*
-  int Fits=0,Occupied=0;
-
-  FitGlass(B,&Fits);
-  if(Fits==0)
-    AndGlass(B,&Occupied);
-*/
   mvwchgat(MyScr,(*GRN)-((B->y)>>1) ,((B->x)&(~1))+2,2,A_REVERSE,0,NULL);
 }
 

@@ -439,9 +439,9 @@ void DrawQueue(void){
 
   LeftMargin+=FigureSize+2;
 
-  for(y=0,N=(CurFigure+1);(N<FigureNum)&&(y<PlacesV);y++){
+  for(x=0,N=(CurFigure+1);(N<FigureNum)&&(x<PlacesH);x++){
 
-    for(x=0;(N<FigureNum)&&(x<PlacesH);x++,N++){
+    for(y=0;(N<FigureNum)&&(y<PlacesV);y++,N++){
 
       CopyFigure(FigureNum,N);
       Normalize(FigureNum,&C);

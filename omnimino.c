@@ -346,6 +346,7 @@ enum OM_Errors{
   OM_LOAD_GAME_PAR_ERROR,
   OM_LOAD_GAME_DATA_ERROR,
   OM_MISSING_INPUT_FILE,
+  OM_NEW_GAME_NOT_ALLOWED,
   OM_ERROR_MAX
 };
 
@@ -359,6 +360,7 @@ char *OM_Message[]={
   "Load game parameters error",
   "Load game data error",
   "Missing input file",
+  "New games allowed in interactive mode only",
   ""
 };
 
@@ -789,6 +791,8 @@ int PlayGame(void){
 
   if(Tty)
     endwin();
+  else if(GameModified)
+    OM_Error=OM_NEW_GAME_NOT_ALLOWED;
 
   fprintf(stdout,"%d\n",Score());
 

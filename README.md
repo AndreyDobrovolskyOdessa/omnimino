@@ -28,7 +28,7 @@ Figure is a set of blocks with fixed ralative placement. Number of blocks in eac
 
 Figures can be generated using aperture, or using natural neighbourship. This is defined by Aperture parameter value. If it is 0, figure blocks are choosed as neighbours. If it is non-zero, aperture is filled with independently placed blocks, which can be separated in space.
 
-Another game figures' sequence parameter is Metrics. Metrics=0 means, that black have 4 neighbours, Metric=1 means 8 neighbours. This is for Aperture=0 case.
+Another game figures' sequence parameter is Metrics. Metrics=0 means, that block have 4 neighbours, Metric=1 means 8 neighbours. This is for Aperture=0 case.
 
 If Aperture is non-zero, Metric=1 means square aperture with side length of value of Aperture parameter, in case Metric=0 this square loose its corners.
 
@@ -57,7 +57,7 @@ Metric=0
 So parameters, influencing random figures sequence are:
 
 
-Aperture (1-MAX_FIGURE_WEIGHT)\
+Aperture (0-MAX_FIGURE_WEIGHT)\
 Metric (0,1)\
 FigureWeightMax (1-MAX_FIGURE_WEIGHT)\
 FigureWeightMin (1-FigureWeightMax)

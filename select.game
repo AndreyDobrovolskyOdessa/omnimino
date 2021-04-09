@@ -15,7 +15,7 @@ while read_branch_data; do
   if parms_pass; then
     show_branch_parms
     for MINO in $GAMELIST; do
-      printf " [%d]:%d" $COUNT $(./omnimino $MINO 2>/dev/null)
+      SCORE="$(./omnimino $MINO 2>/dev/null)" && printf " [%d]:%d" $COUNT $SCORE
       COUNT=$((COUNT+1))
       echo $MINO >> $GAMES
     done

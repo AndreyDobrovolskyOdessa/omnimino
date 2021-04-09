@@ -55,19 +55,19 @@ show_branch_parms(){
 
 
 read_game_parms() {
-  read APERTURE;
-  read METRIC;
-  read FIGUREWEIGHTMAX;
-  read FIGUREWEIGHTMIN;
-  read GRAVITY;
-  read FREEMOVE;
-  read FULLROW;
-  read GOAL;
-  read GLASSWIDTH;
-  read GLASSHEIGHT;
-  read FILLLEVEL;
-  read FILLRATIO;
-  read SLOTSUNIQUE;
+  read APERTURE REST;
+  read METRIC REST;
+  read FIGUREWEIGHTMAX REST;
+  read FIGUREWEIGHTMIN REST;
+  read GRAVITY REST;
+  read FREEMOVE REST;
+  read FULLROW REST;
+  read GOAL REST;
+  read GLASSWIDTH REST;
+  read GLASSHEIGHT REST;
+  read FILLLEVEL REST;
+  read FILLRATIO REST;
+  read SLOTSUNIQUE REST;
 }
 
 make_index() {

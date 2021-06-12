@@ -243,6 +243,21 @@ int CopyFigure(int DestN,int SrcN){
 }
 
 
+int Unfilled(void){
+  int i,s;
+  unsigned int r;
+
+  for(i=0,s=0;i<GlassHeight;i++){
+    for(r=(~GlassRow[i])&FullRow;r;r>>=1){
+      if(r&1)
+        s++;
+    }
+  }
+
+  return(s);
+}
+
+
 /**************************************
 
            New game functions
@@ -459,6 +474,30 @@ void DrawQueue(void){
   
 }
 
+
+#define STATUS_MARK_POS 0
+#define STATUS_MARK_LEN 1
+
+#define STATUS_SCORE_POS 1
+#define STATUS_SCORE_LEN 4
+
+#define STATUS_LEN (STATUS_MARK_LEN+STATUS_SCORE_LEN)
+
+
+void DrawStatus(void){
+  char StatusMark[STATUS_MARK_LEN+1];
+  char StatusScore[STATUS_SCORE_LEN+1];
+  int CurScore = (Goal==FILL_GOAL)?Unfilled():CurFigure;
+  int StatusY = getmaxy(MyScr)-1;
+  int StatusX = getmaxx(MyScr)-STATUS_LEN;
+
+  StatusMark[0]=GoalReached?'+':(GameOver?'-':' ');
+  snprintf(StatusScore,STATUS_SCORE_LEN+1,"%-*d",STATUS_SCORE_LEN,CurScore);
+
+  mvwaddnstr(MyScr,StatusY,StatusX+STATUS_MARK_POS,StatusMark,STATUS_MARK_LEN);
+  mvwaddnstr(MyScr,StatusY,StatusX+STATUS_SCORE_POS,StatusScore,STATUS_SCORE_LEN);
+}
+
 int ShowScreen(void){
   int GlassRowN;
 
@@ -479,6 +518,7 @@ int ShowScreen(void){
     if(CurFigure<FigureNum)
       ForEachIn(CurFigure,DrawBlock,GlassRowN);
     DrawQueue();
+    DrawStatus();
   }
 
   wrefresh(MyScr);
@@ -542,8 +582,7 @@ void Deploy(int FN,int NewX,int NewY){
 
 void CheckGame(void){
 
-  if(((Goal==FILL_GOAL)&&(GlassLevel>GlassHeight)) ||
-     ((Goal==TOUCH_GOAL)&&((ForEachIn(FigureNum,FindBottom,INT_MAX)>>1)==0)) ||
+  if(((Goal==TOUCH_GOAL)&&((ForEachIn(FigureNum,FindBottom,INT_MAX)>>1)==0)) ||
      ((Goal==FLAT_GOAL)&&((GlassLevel==0)||(GlassRow[GlassLevel-1]==FullRow))))
     GoalReached=1;
 
@@ -758,22 +797,9 @@ int GetCmd(void){
   return((*Func)());
 }
 
+
 int Score(void){
-  int i,s;
-  unsigned int r;
-
-  if(Goal==FILL_GOAL){
-    for(i=0,s=0;i<GlassHeight;i++){
-      for(r=(~GlassRow[i])&FullRow;r;r>>=1){
-        if(r&1)
-          s++;
-      }
-    }
-  }else{
-    s=GoalReached?CurFigure:FigureNum;
-  }
-
-  return(s);
+  return((Goal==FILL_GOAL)?Unfilled():(GoalReached?CurFigure:FigureNum));
 }
 
 
@@ -1169,5 +1195,6 @@ int main(int argc,char *argv[]){
 
   return(OM_Error);
 }
+
 
 

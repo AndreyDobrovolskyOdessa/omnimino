@@ -118,7 +118,7 @@ j - move down\
 k - move up
 
 a - rotate ccw\
-s,d - vertical mirror
+s,d - vertical mirror\
 f - rotate cw\
 
 SPACE - drop figure
@@ -155,7 +155,7 @@ Line No    Parameter or data
 18         Figures' first block numbers, deliimited with ;\
 19         Blocks coordinates. x,y;\
 20         Player $USER\
-21         Time of save\
+21         Time of save
 
 All data are in decimal representation.
 

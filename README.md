@@ -106,8 +106,9 @@ Depends on goal.
 
 - Flat. Number of figure, which made the top row flat.
 
-
 Score is the less, the better.
+
+Short status is present in the right-bottom corner of the screen. '+' means that game goal is reached. '-' means that game is over - some blocks were placed above the glass top. Number represents estimated game score according to game settings.
 
 ## Controls
 

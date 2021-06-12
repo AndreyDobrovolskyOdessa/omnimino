@@ -119,7 +119,7 @@ k - move up
 
 a - rotate ccw\
 s,d - vertical mirror\
-f - rotate cw\
+f - rotate cw
 
 SPACE - drop figure
 

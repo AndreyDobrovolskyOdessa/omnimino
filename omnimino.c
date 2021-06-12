@@ -2,7 +2,7 @@
 	Omnimino is console version of polymino puzzle.
 	Figure sizes, shapes, field size and gameplay options can be varied.
 
-	Copyright (C) 2019 Andrey Dobrovolsky
+	Copyright (C) 2019-2021 Andrey Dobrovolsky
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -1177,7 +1177,7 @@ int LoadGame(char *Name){
 
 int ShowUsage(void){
   fputs(
-"Omnimino 0.1 Copyright (C) 2019 Andrey Dobrovolsky\n\n\
+"Omnimino 0.2 Copyright (C) 2019-2021 Andrey Dobrovolsky\n\n\
 Usage: omnimino infile\n\n",
   stderr);
 

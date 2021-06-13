@@ -167,6 +167,7 @@ If file name is not equal to md5sum of its content, it is considered as preset f
 For preset files parameters may be commented, without any delimiters. Only the first word is interpreted as data, the rest of line is ignored.\
 play.preset assumes preset files to be names as p*.mino
 
+### select.game, select.preset and select.branch
 
 select.game allows to choose one of saved games, according to game parameters. It can be useful as
 
@@ -198,8 +199,10 @@ choose among games with GlassHeight == 10
 
 choose among games with (FigureWeightMax == 5) && (Goal == TOUCH_GOAL) && (FillRatio == 8)
 
+Only valid game record files are taken into consideration by select.game - those ones which content md5sum matches file name. If content md5sum doesn't match its file name, then file is encountered the preset for new game and new random figures sequence is generated. Such files may be accessed via select.preset utility.
 
-select.branch works with the same options and allows to choose game branches with the same parent. May be useful for cleaning:
+
+select.branch works with the same options and allows to list whole games branches with the same parent. May be useful for cleaning:
 
     rm $(./select.branch xxxxxxxx x x x x)
 

@@ -3,7 +3,7 @@
 4    FigureWeightMax
 4    FigureWeightMin
 1    Gravity
-1    Single layer, new figure can not move through glass blocks
+1    Single layer, new figure can not move over the already dropped blocks
 1    FullRowClear
 0    Goal : 0 - fill, 1 - touch bottom, 2 - get flat top
 10   GlassWidth

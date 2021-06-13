@@ -63,10 +63,13 @@ FigureWeightMax (1-MAX_FIGURE_WEIGHT)\
 FigureWeightMin (1-FigureWeightMax)
 
 
-Group of boolean parameters influences the gameplay. They are:
+Gameplay options:
 
 
-Gravity,SingleLayer,FullRowClear and Goal. 
+Gravity (0-1)\
+SingleLayer (0-1)\
+FullRowClear (0-1)\
+Goal (0-2)
 
 
 Goal may be:
@@ -163,5 +166,41 @@ The name of game record file is md5sum of its content.\
 If file name is not equal to md5sum of its content, it is considered as preset for new game.\
 For preset files parameters may be commented, without any delimiters. Only the first word is interpreted as data, the rest of line is ignored.\
 play.preset assumes preset files to be names as p*.mino
+
+
+select.game allows to choose one of saved games, according to game parameters. It can be useful as
+
+    ./omnimino $(./select.game)
+
+Accepts up to 5 parameters, describing filters, according to parameters order in game record .mino file:
+
+$1	string of 1-8 chars [1-9x], corresponding Apperture, Metric,  ... Goal
+$2	decimal or 'x' - GlassWidth
+$3	decimal or 'x' - GlassHeight
+$4	decimal or 'x' - FillLevel
+$5	decimal or 'x' - FillRatio
+
+For example:
+
+    ./select.game 0
+
+choose among games with Apperture == 0
+
+    ./select.game xxxx1
+
+choose among games with Gravity == 1
+
+    ./select.game x x 10
+
+choose among games with GlassHeight == 10
+
+    ./select.game xx5xxxx1 x x x 8
+
+choose among games with (FigureWeightMax == 5) && (Goal == TOUCH_GOAL) && (FillRatio == 8)
+
+
+select.branch works with the same options and allows to choose game branches with the same parent. May be useful for cleaning:
+
+    rm $(./select.branch xxxxxxxx x x x x)
 
 

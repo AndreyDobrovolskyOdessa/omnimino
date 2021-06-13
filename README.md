@@ -174,10 +174,10 @@ select.game allows to choose one of saved games, according to game parameters. I
 
 Accepts up to 5 parameters, describing filters, according to parameters order in game record .mino file:
 
-$1	string of 1-8 chars [1-9x], corresponding Apperture, Metric,  ... Goal
-$2	decimal or 'x' - GlassWidth
-$3	decimal or 'x' - GlassHeight
-$4	decimal or 'x' - FillLevel
+$1	string of 1-8 chars [1-9x], corresponding Apperture, Metric,  ... Goal\
+$2	decimal or 'x' - GlassWidth\
+$3	decimal or 'x' - GlassHeight\
+$4	decimal or 'x' - FillLevel\
 $5	decimal or 'x' - FillRatio
 
 For example:

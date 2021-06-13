@@ -30,7 +30,7 @@ read -p "Enter branch number : " NUM
 
 STR=
 
-[ -n "$NUM" ] && STR=$(sed -n -e ${NUM}p $GAMES)
+[ -n "$NUM" ] && STR=$(sed -n -e ${NUM}p $GAMES) || STR="$(cat $GAMES)"
 
 rm -f $GAMES
 

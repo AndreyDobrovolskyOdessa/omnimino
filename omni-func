@@ -74,7 +74,7 @@ make_index() {
 
   PARENT_PREV=
 
-  for MINO in $(ls [0-9a-f]*.mino);  do
+  for MINO in $(ls *.mino);  do
     PARENT=$(sed -n 14p $MINO)
     if [ "$PARENT" = "none" ]; then
       echo $MINO 0 $MINO ;

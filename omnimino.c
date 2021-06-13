@@ -70,7 +70,7 @@ int Aperture;
 int FigureMetric; /* 0 - abs(x1-x0)+abs(y1-y0), 1 - max(abs(x1-x0),abs(y1-y0)) */
 
 int Gravity;
-int FreeMove; /* non-free move actually */
+int FlatFun; /* non-free move actually */
 int FullRowClear;
 
 int Goal;
@@ -541,7 +541,7 @@ void DetectGlassLevel(void){
 void Drop(int FigN){
   CopyFigure(FigureNum,FigN);
   if(Gravity){
-    if(!FreeMove){
+    if(!FlatFun){
       ForEachIn(FigureNum,AddY,-(ForEachIn(FigureNum,FindBottom,INT_MAX)&(~1)));
       while((ForEachIn(FigureNum,FitGlass,0)==0)&&(ForEachIn(FigureNum,AndGlass,0)!=0))
         ForEachIn(FigureNum,AddY,2);
@@ -680,7 +680,7 @@ int Attempt(void (*F)(void)){
     CopyFigure(FigureNum,CurFigure);
     (*F)();
     if((ForEachIn(FigureNum,FitGlass,0)==0)&&
-       ((!FreeMove) || (ForEachIn(FigureNum,AndGlass,0)==0))){
+       ((!FlatFun) || (ForEachIn(FigureNum,AndGlass,0)==0))){
       CopyFigure(CurFigure,FigureNum);
       Untouched=CurFigure+1;
       GameModified=1;
@@ -838,7 +838,7 @@ int *GameParAddr[]={
   &FigureWeightMax,
   &FigureWeightMin,
   &Gravity,
-  &FreeMove,
+  &FlatFun,
   &FullRowClear,
   &Goal,
   &GlassWidth,
@@ -855,7 +855,7 @@ char *GameParName[]={
   "FigureWeightMax",
   "FigureWeightMin",
   "Gravity",
-  "FreeMove",
+  "FlatFun",
   "FullRowClear",
   "Goal",
   "GlassWidth",
@@ -886,7 +886,7 @@ int GetHash(char *FileName, char *HashStr){
     fprintf(stderr,"can't open pipe '%s'\n",Buf); return(1);
   }
 
-  sprintf(Fmt,"%%%ds%%*[^\\n]",OM_HASH_LEN-1-strlen(OM_ext));
+  sprintf(Fmt,"%%%ds%%*[^\\n]",OM_HASH_LEN-1-((int)sizeof(OM_ext)));
 
   if(fscanf(f,Fmt,HashStr)!=1){
     fprintf(stderr,"error reading hash from pipe.\n"); return(1);
@@ -1015,8 +1015,8 @@ int CheckParameters(void){
     Err=1;
   }
 
-  if(FreeMove>1){
-    fprintf(stderr,"[6] FreeMove (%d) can be 0 or 1 .\n",FreeMove);
+  if(FlatFun>1){
+    fprintf(stderr,"[6] FlatFun (%d) can be 0 or 1 .\n",FlatFun);
     Err=1;
   }
 

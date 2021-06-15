@@ -429,8 +429,6 @@ void DrawGlass(int GlassRowN){
 int SelectGlassRow(void){
   int GlassRowN,FCV;
 
-  DetectGlassLevel();
-
   FCV=CenterV((CurFigure<FigureNum)?CurFigure:(CurFigure-1))>>1;
 
   GlassRowN=FCV+(FigureSize/2)+1;
@@ -597,6 +595,7 @@ int GetGlassState(void){
 
   if(NextFigure<CurFigure){
     memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow));
+    DetectGlassLevel();
     GlassHeight=GlassHeightBuf;
     CurFigure=0;
     GameOver=0;

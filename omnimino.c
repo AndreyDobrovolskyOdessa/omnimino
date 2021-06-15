@@ -258,6 +258,13 @@ int Unfilled(void){
 }
 
 
+void DetectGlassLevel(void){
+  GlassLevel=GlassHeight+FigureSize+1;
+  while((GlassLevel>0)&&(GlassRow[GlassLevel-1]==0))
+    GlassLevel--;
+}
+
+
 /**************************************
 
            New game functions
@@ -422,6 +429,8 @@ void DrawGlass(int GlassRowN){
 int SelectGlassRow(void){
   int GlassRowN,FCV;
 
+  DetectGlassLevel();
+
   FCV=CenterV((CurFigure<FigureNum)?CurFigure:(CurFigure-1))>>1;
 
   GlassRowN=FCV+(FigureSize/2)+1;
@@ -464,7 +473,7 @@ void DrawQueue(void){
       Normalize(FigureNum,&C);
 
       ForEachIn(FigureNum,AddX,LeftMargin+(2*x*(FigureSize+2)));
-      ForEachIn(FigureNum,AddY,-(FigureSize+2)-(2*y*(FigureSize+2)));
+      ForEachIn(FigureNum,AddY,-(FigureSize+2)-(2*y*(FigureSize+2))+1);
 
       ForEachIn(FigureNum,DrawBlock,0);
 
@@ -531,12 +540,6 @@ int ShowScreen(void){
            Various game functions
 
 **************************************/
-
-void DetectGlassLevel(void){
-  GlassLevel=GlassHeight+FigureSize+1;
-  while((GlassLevel>0)&&(GlassRow[GlassLevel-1]==0))
-    GlassLevel--;
-}
 
 void Drop(int FigN){
   CopyFigure(FigureNum,FigN);

@@ -98,7 +98,7 @@ parms_pass() {
 
 show_branch_parms(){
   printf "%3s" $MINOTYPE
-  if [ "$MINOTYPE" == "e" ]
+  if [ "$MINOTYPE" = "e" ]
   then
     printf "  %s" $PARENT
   else
@@ -173,7 +173,7 @@ make_index() {
       [ -n "$PARENT_PREV" ] && echo
       PARENT_PREV=$PARENT
       printf "%1s " $MINOTYPE
-      if [ "$MINOTYPE" == "e" ]
+      if [ "$MINOTYPE" = "e" ]
       then
         clear_game_parms
       else
@@ -216,14 +216,14 @@ do
     printf "[%2d] " $COUNT
     COUNT=$((COUNT+1))
     show_branch_parms
-    if [ "$MINOTYPE" == "e" ]
+    if [ "$MINOTYPE" = "e" ]
     then
       echo "$PARENT" >> $GAMES
     else
       ISNAME="1"
       for WORD in $GAMELIST
       do
-        if [ "$ISNAME" == "1" ]
+        if [ "$ISNAME" = "1" ]
         then
           echo -n "$WORD " >> $GAMES
           ISNAME="0"

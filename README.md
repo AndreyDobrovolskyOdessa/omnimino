@@ -164,46 +164,25 @@ All data are in decimal representation.
 
 The name of game record file is md5sum of its content.\
 If file name is not equal to md5sum of its content, it is considered as preset for new game.\
-For preset files parameters may be commented, without any delimiters. Only the first word is interpreted as data, the rest of line is ignored.\
-play.preset assumes preset files to be names as p*.mino
+For preset files parameters may be commented, without any delimiters. Only the first word is interpreted as data, the rest of line is ignored.
 
-### select.game, select.preset and select.branch
+### minos utility
 
-select.game allows to choose one of saved games, according to game parameters. It can be useful as
+Can be used to select .mino files according to their content. Command line parameters are some search keys, output (strout) is the list of .mino files names, satisfying requested conditions. See source for details.
 
-    ./omnimino $(./select.game)
+    ./omnimino $(./minos p)
 
-Accepts up to 5 parameters, describing filters, according to parameters order in game record .mino file:
+Manually select and play one of the existing presets.
 
-$1	string of 1-8 chars [1-9x], corresponding Apperture, Metric,  ... Goal\
-$2	decimal or 'x' - GlassWidth\
-$3	decimal or 'x' - GlassHeight\
-$4	decimal or 'x' - FillLevel\
-$5	decimal or 'x' - FillRatio
+    ./omnimino $(./minos g)
 
-For example:
+Replay one of the existing recorded games.
 
-    ./select.game 0
+    ./omnimino $(ls -t $(echo | ./minos g 2>/dev/null) | head -n 1)
 
-choose among games with Apperture == 0
+Replay the latest recorded game.
 
-    ./select.game xxxx1
+    rm -f $(echo | ./minos e 2>/dev/null)
 
-choose among games with Gravity == 1
-
-    ./select.game x x 10
-
-choose among games with GlassHeight == 10
-
-    ./select.game xx5xxxx1 x x x 8
-
-choose among games with (FigureWeightMax == 5) && (Goal == TOUCH_GOAL) && (FillRatio == 8)
-
-Only valid game record files are taken into consideration by select.game - those ones which content md5sum matches file name. If content md5sum doesn't match its file name, then file is encountered the preset for new game and new random figures sequence is generated. Such files may be accessed via select.preset utility.
-
-
-select.branch works with the same options and allows to list whole games branches with the same parent. May be useful for cleaning:
-
-    rm $(./select.branch xxxxxxxx x x x x)
-
+Remove all corrupted .mino files in the current directory.
 

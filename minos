@@ -42,21 +42,21 @@
 #
 
 determine_keys() {
-  MINOTYPE_KEY=$( echo $1 | cut -b 1 )
+  MINOTYPE_KEY="$( echo $1 | cut -b 1 )"
 
-  GOAL_KEY=$( echo $2 | cut -b 1 )
-  APERTURE_KEY=$( echo $2 | cut -b 2 )
-  METRIC_KEY=$( echo $2 | cut -b 3 )
-  FIGUREWEIGHTMAX_KEY=$( echo $2 | cut -b 4 )
-  FIGUREWEIGHTMIN_KEY=$( echo $2 | cut -b 5 )
-  GRAVITY_KEY=$( echo $2 | cut -b 6 )
-  FLATFUN_KEY=$( echo $2 | cut -b 7 )
-  FULLROW_KEY=$( echo $2 | cut -b 8 )
+  GOAL_KEY="$( echo $2 | cut -b 1 )"
+  APERTURE_KEY="$( echo $2 | cut -b 2 )"
+  METRIC_KEY="$( echo $2 | cut -b 3 )"
+  FIGUREWEIGHTMAX_KEY="$( echo $2 | cut -b 4 )"
+  FIGUREWEIGHTMIN_KEY="$( echo $2 | cut -b 5 )"
+  GRAVITY_KEY="$( echo $2 | cut -b 6 )"
+  FLATFUN_KEY="$( echo $2 | cut -b 7 )"
+  FULLROW_KEY="$( echo $2 | cut -b 8 )"
 
-  GLASSWIDTH_KEY=$3
-  GLASSHEIGHT_KEY=$4
-  FILLLEVEL_KEY=$5
-  FILLRATIO_KEY=$6
+  GLASSWIDTH_KEY="$3"
+  GLASSHEIGHT_KEY="$4"
+  FILLLEVEL_KEY="$5"
+  FILLRATIO_KEY="$6"
 
   [ "$MINOTYPE_KEY" = "x" ] && MINOTYPE_KEY= 
 
@@ -97,14 +97,28 @@ parms_pass() {
 }
 
 show_branch_parms(){
-  printf "%3s" $MINOTYPE
+  [ -n "$MINOTYPE_KEY" ] && printf "  -" || printf "%3s" $MINOTYPE
   if [ "$MINOTYPE" = "e" ]
   then
     printf "  %s" $PARENT
   else
-    printf "%4d%4d%4d   [%1d-%1d]%4d%4d%4d   %2d*%-3d %3d*%-2d "\
-    $GOAL $APERTURE $METRIC $FIGUREWEIGHTMAX $FIGUREWEIGHTMIN $GRAVITY $FLATFUN\
-    $FULLROW $GLASSWIDTH $GLASSHEIGHT $FILLLEVEL $FILLRATIO
+    [ -n "$GOAL_KEY" ] && printf "   -" || printf "%4d" $GOAL 
+    [ -n "$APERTURE_KEY" ] && printf "   -" || printf "%4d" $APERTURE
+    [ -n "$METRIC_KEY" ] && printf "   -" || printf "%4d" $METRIC
+    printf "   ["
+    [ -n "$FIGUREWEIGHTMAX_KEY" ] && printf "-" || printf "%1d" $FIGUREWEIGHTMAX
+    printf "-"
+    [ -n "$FIGUREWEIGHTMIN_KEY" ] && printf "-" || printf "%1d" $FIGUREWEIGHTMIN
+    printf "]"
+    [ -n "$GRAVITY_KEY" ] && printf "   -" || printf "%4d" $GRAVITY
+    [ -n "$FLATFUN_KEY" ] && printf "   -" || printf "%4d" $FLATFUN
+    [ -n "$FULLROW_KEY" ] && printf "   -" || printf "%4d" $FULLROW
+    [ -n "$GLASSWIDTH_KEY" ] && printf "  --" || printf "%4d" $GLASSWIDTH
+    printf "*"
+    [ -n "$GLASSHEIGHT_KEY" ] && printf "-- " || printf "%-3d" $GLASSHEIGHT
+    [ -n "$FILLLEVEL_KEY" ] && printf "  --" || printf "%4d" $FILLLEVEL
+    printf "*"
+    [ -n "$FILLRATIO_KEY" ] && printf "-- " || printf "%-3d" $FILLRATIO
   fi
 }
 
@@ -205,7 +219,7 @@ GAMES=$(mktemp)
 COUNT=1
 
 echo >&2
-echo "  N  Type  G   A   M   Weight  Gr  S   C   Glass   Fill   Scores">&2
+echo "  N  Type  G   A   M   Weight  Gr  S   C  Glass    Fill  Scores">&2
 echo >&2
 
 make_index | 

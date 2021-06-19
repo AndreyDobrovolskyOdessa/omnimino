@@ -168,7 +168,7 @@ For preset files parameters may be commented, without any delimiters. Only the f
 
 ### minos utility
 
-Can be used to select .mino files according to their content. Command line parameters are some search keys, output (strout) is the list of .mino files names, satisfying requested conditions. See source for details.
+Can be used to select .mino files according to their content. Command line parameters are some search keys, output (stdout) is the list of .mino files names, satisfying requested conditions. See source for details.
 
     ./omnimino $(./minos p)
 

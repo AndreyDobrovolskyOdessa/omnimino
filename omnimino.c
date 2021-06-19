@@ -32,8 +32,7 @@
 #include <libgen.h>
 
 
-#include <ncursesw/ncurses.h>
-/*#include <ncurses.h>*/
+#include <ncurses.h>
 
 struct Coord{
   int x,y;
@@ -70,7 +69,7 @@ int Aperture;
 int FigureMetric; /* 0 - abs(x1-x0)+abs(y1-y0), 1 - max(abs(x1-x0),abs(y1-y0)) */
 
 int Gravity;
-int FlatFun; /* non-free move actually */
+int FlatFun;      /* single-layer, moving figure can not overlap placed blocks */
 int FullRowClear;
 
 int Goal;
@@ -120,7 +119,7 @@ int Untouched; /* lowest unmodified */
 
 int GlassHeight; /* can change during game if FullRowClear */
 int GlassLevel;	/* lowest free line */
-int FullRow; /* template, defined once per game, depends on GlassWidth */
+unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
 int GameOver;
 int GoalReached;
 int GameModified=0;
@@ -132,9 +131,22 @@ int GameModified=0;
 
 **************************************/
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 void ScaleUp(struct Coord *B,int *V){
   (B->x)<<=1; (B->y)<<=1;
 }
+
+void NegX(struct Coord *B,int *V){
+  (B->x)=-(B->x);
+}
+
+void PlaceIntoGlass(struct Coord *B, int *V){
+  GlassRow[(B->y)>>1] |= (1<<((B->x)>>1));
+}
+
+#pragma GCC diagnostic pop
 
 void FindLeft(struct Coord *B,int *V){
   if((*V)>(B->x)) (*V)=(B->x);
@@ -159,16 +171,6 @@ void AddX(struct Coord *B,int *V){
 void AddY(struct Coord *B,int *V){
   (B->y)+=(*V);
 }
-
-void NegX(struct Coord *B,int *V){
-  (B->x)=-(B->x);
-}
-
-/*
-void NegY(struct Coord *B,int *V){
-  (B->y)=-(B->y);
-}
-*/
 
 void SwapXY(struct Coord *B,int *V){
   (*V)=(B->x);
@@ -201,10 +203,6 @@ void FitGlass(struct Coord *B, int *Err){
 
 void AndGlass(struct Coord *B, int *Err){
   (*Err) |= ( GlassRow[(B->y)>>1] & (1<<((B->x)>>1)) );
-}
-
-void PlaceIntoGlass(struct Coord *B, int *V){
-  GlassRow[(B->y)>>1] |= (1<<((B->x)>>1));
 }
 
 int ForEachIn(int FN, void (*Func)(struct Coord *, int *), int V){
@@ -1191,12 +1189,10 @@ Usage: omnimino infile\n\n",
 
 int main(int argc,char *argv[]){
 
-  ((argc>1)?LoadGame(argv[1]):ShowUsage()) || PlayGame() || SaveGame();
+  (void)(((argc>1)?LoadGame(argv[1]):ShowUsage()) || PlayGame() || SaveGame());
 
   fprintf(stderr,"%s\n",OM_Message[OM_Error]);
 
   return(OM_Error);
 }
-
-
 

@@ -258,9 +258,9 @@ read -p "Enter [ branch [ game ] ] : " BNUM GNUM
 
 STR=
 
-[ -n "$BNUM" ] && STR=$(sed -n -e ${BNUM}p $GAMES) || STR="$(cat $GAMES)"
+[ -n "$BNUM" ] && STR="$(sed -n -e ${BNUM}p $GAMES)" || STR="$(cat $GAMES)"
 
-[ -n "$GNUM" ] && STR=$(echo "$STR" | cut -d ' ' -f $GNUM)
+[ -n "$GNUM" ] && STR="$(echo $STR | cut -d ' ' -f $GNUM)"
 
 rm -f $GAMES
 

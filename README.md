@@ -186,3 +186,14 @@ Replay the latest recorded game.
 
 Remove all corrupted .mino files in the current directory.
 
+
+minos.lua has the same functionality, but written in Lua and is about twice faster. Search keys are slightly different, see source or
+
+    minos.lua -h
+
+Of course You need Lua installed in Your system.
+
+
+Andrey Dobrovolsky <andrey.dobrovolsky.odessa@gmail.com>
+
+

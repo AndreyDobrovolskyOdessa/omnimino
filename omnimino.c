@@ -603,8 +603,8 @@ int GetGlassState(void){
 
   if(NextFigure<CurFigure){
     memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow));
-    DetectGlassLevel();
     GlassHeight=GlassHeightBuf;
+    DetectGlassLevel();
     CurFigure=0;
     GameOver=0;
     GoalReached=0;

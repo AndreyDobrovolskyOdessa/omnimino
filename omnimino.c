@@ -581,9 +581,19 @@ void Deploy(int FN,int NewX,int NewY){
 
 void CheckGame(void){
 
-  if(((Goal==TOUCH_GOAL)&&((ForEachIn(FigureNum,FindBottom,INT_MAX)>>1)==0)) ||
-     ((Goal==FLAT_GOAL)&&((GlassLevel==0)||(GlassRow[GlassLevel-1]==FullRow))))
-    GoalReached=1;
+  switch(Goal){
+    case TOUCH_GOAL:
+      if((ForEachIn(FigureNum,FindBottom,INT_MAX)>>1)==0)
+        GoalReached=1;
+      break;
+    case FLAT_GOAL:
+      if((GlassLevel==0)||(GlassRow[GlassLevel-1]==FullRow))
+        GoalReached=1;
+      break;
+    default:
+      if(Unfilled()==0)
+        GoalReached=1;
+  }
 
   if(GoalReached||(GlassLevel>GlassHeight))
     GameOver=1;

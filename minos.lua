@@ -26,9 +26,9 @@ $6 -	FillLevel
 
 $7 -	FillRatio
 
-.mino files are grouped in branches, having the same parent. Game records are
-described with the scores.  Corrupted files are described with the first line
-of their error messages.
+.mino files are grouped in branches, having the same parent. Game records
+have scores. Presets have no scores. For corrupted files the first line
+of the error message is shown.
 
 After descriptions  will be shown,  You will be asked  to choose sequentional
 number of the branch desired (optional)  and sequential number of the game in
@@ -66,7 +66,7 @@ App	Metr	WMax	WMin	Grav	SL	FRC	Goal	GW	GH	FL	FR	SU
 
 Parameters order for display
 
-Type	WMax	WMin	App	Metr	Goal	Grav	SL	FRC	GW	GH	FL	FR
+WMax	WMin	App	Metr	Goal	Grav	SL	FRC	GW	GH	FL	FR
 
 
 Parameters order for keys
@@ -122,9 +122,9 @@ end
 
 
 
----------------------
---  Reading .minos --
----------------------
+--------------------
+-- Reading .minos --
+--------------------
 
 local ParPos = { 4, 5, 2, 13, 6, 7, 8, 3, 9, 10, 11, 12, 14 }
 
@@ -169,17 +169,17 @@ io.stderr:write("\nReading .minos  ")
 
 local Branch={}
 
-local MinosList=os.tmpname()
-local Result, ExitType, ExitCode = os.execute(" ls *.mino > " .. MinosList)
 
 local ScoreFileName = os.tmpname()
 local MessageFileName = os.tmpname()
 
-for MinoName in io.lines(MinosList) do
+local f = io.popen("ls *.mino", "r")
+
+for MinoName in f:lines() do
 
   io.stderr:write(".")
 
-  Result, ExitType, ExitCode = os.execute("./omnimino " .. MinoName .. " 2> "  .. MessageFileName .. " > " .. ScoreFileName )
+  local Result, ExitType, ExitCode = os.execute("./omnimino " .. MinoName .. " 2> "  .. MessageFileName .. " > " .. ScoreFileName )
 
   local CurGame = {}
   local Parent
@@ -218,9 +218,9 @@ end
 io.stderr:write("Ok\n")
 
 
------------------------
---  Sorting branches --
------------------------
+----------------------
+-- Sorting branches --
+----------------------
 
 
 local SBranch = {}
@@ -267,7 +267,7 @@ local CompareData = function(D1, D2)
 end
 
 io.stderr:write("\n")
-io.stderr:write("   Type  Width  A  M   G   Gr S  C   Glass   Fill   Scores\n")
+io.stderr:write("    Weight  A  M   G   Gr S  C   Glass   Fill   Scores\n")
 io.stderr:write("\n")
 
 
@@ -287,8 +287,6 @@ for i, Br in ipairs(SBranch) do
 
 
   io.stderr:write(string.format("%2d", i))
-
-  Exhibit{{1, 4}}
 
   if Br.Parms[1] ~= "e" then
     Exhibit{{2,4}}

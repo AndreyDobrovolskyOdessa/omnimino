@@ -166,23 +166,26 @@ The name of game record file is md5sum of its content.\
 If file name is not equal to md5sum of its content, it is considered as preset for new game.\
 For preset files parameters may be commented, without any delimiters. Only the first word is interpreted as data, the rest of line is ignored.
 
-### minos utility
+### minos.sh utility
 
 Can be used to select .mino files according to their content. Command line parameters are some search keys, output (stdout) is the list of .mino files names, satisfying requested conditions. See source for details.
 
-    ./omnimino $(./minos p)
+    ./omnimino $(./minos.sh p)
 
 Manually select and play one of the existing presets.
 
-    ./omnimino $(./minos g)
+
+    ./omnimino $(./minos.sh g)
 
 Replay one of the existing recorded games.
 
-    ./omnimino $(ls -t $(echo | ./minos g 2>/dev/null) | head -n 1)
+
+    ./omnimino $(ls -t $(echo | ./minos.sh g 2>/dev/null) | head -n 1)
 
 Replay the latest recorded game.
 
-    rm -f $(echo | ./minos e 2>/dev/null)
+
+    rm -f $(echo | ./minos.sh e 2>/dev/null)
 
 Remove all corrupted .mino files in the current directory.
 

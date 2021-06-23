@@ -270,26 +270,21 @@ io.stderr:write("\n")
 io.stderr:write("   Type  Width  A  M   G   Gr S  C   Glass   Fill   Scores\n")
 io.stderr:write("\n")
 
-local Br
 
-local Exhibit = function(ListOfPairs)
 
-  local ThePair, First, Second
+for i, Br in ipairs(SBranch) do
 
-  for i = 1, #ListOfPairs do
-    ThePair = ListOfPairs[i]
-    First = ThePair[1]
-    Second = ThePair[2]
-    io.stderr:write(string.format("%" .. tostring(Second)  .. "s", Key[First] and " " or tostring(Br.Parms[First]))) 
+  local Exhibit = function(ListOfPairs)
+
+    local First, Second
+
+    for i, ThePair in ipairs(ListOfPairs) do
+      First = ThePair[1]
+      Second = ThePair[2]
+      io.stderr:write(string.format("%" .. tostring(Second)  .. "s", Key[First] and " " or tostring(Br.Parms[First]))) 
+    end
   end
 
-end
-
-local k
-
-for i = 1, #SBranch do
-
-  Br = SBranch[i]
 
   io.stderr:write(string.format("%2d", i))
 
@@ -307,8 +302,7 @@ for i = 1, #SBranch do
 
   table.sort(Br,CompareData)
 
-  for j = 1, #Br do
-    k = Br[j]
+  for j, k in ipairs(Br) do
     if k.Data then
       io.stderr:write(" ", k.Data)
     end
@@ -333,11 +327,9 @@ end
 local BN = tonumber(Ans[1])
 local GN = tonumber(Ans[2])
 
-for i = 1, #SBranch do
-  Br = SBranch[i]
+for i, Br in ipairs(SBranch) do
   if not BN or BN == i then
-    for j = 1, #Br do
-      k = Br[j]
+    for j, k in ipairs(Br) do
       if not GN or GN == j then
         io.stdout:write(" ", k.Name)
       end

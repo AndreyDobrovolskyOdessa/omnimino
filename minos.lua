@@ -164,7 +164,7 @@ local ParmsMatchKey = function(Parameter, Key)
 end
 
 
-io.stderr:write("\nReading .minos  ")
+io.stderr:write("\nReading .minos ..")
 
 
 local Branch={}
@@ -173,7 +173,7 @@ local Branch={}
 local ScoreFileName = os.tmpname()
 local MessageFileName = os.tmpname()
 
-local f = io.popen("ls *.mino", "r")
+local f = io.popen("ls *.mino 2>/dev/null", "r")
 
 for MinoName in f:lines() do
 
@@ -215,19 +215,28 @@ for MinoName in f:lines() do
   end
 end
 
-io.stderr:write("Ok\n")
+local SBranch = {}
+
+for i,j in pairs(Branch) do
+  table.insert(SBranch,j)
+end
+
+
+if #SBranch == 0 then
+
+io.stderr:write(" not found\n\n")
+os.exit()
+
+end
+
+io.stderr:write(" Ok\n")
+
 
 
 ----------------------
 -- Sorting branches --
 ----------------------
 
-
-local SBranch = {}
-
-for i,j in pairs(Branch) do
-  table.insert(SBranch,j)
-end
 
 local CompareBranches = function(B1, B2)
   local Q1, Q2

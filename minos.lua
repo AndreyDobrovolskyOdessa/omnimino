@@ -42,6 +42,23 @@ os.exit()
 
 end
 
+-------------------------------------
+-- Try to locate "omnimino" binary --
+-------------------------------------
+
+local OmniminoName
+
+if (os.execute("which omnimino > /dev/null")) then 
+  OmniminoName = "omnimino "
+else
+  if (os.execute("test -x omnimino")) then
+    OmniminoName = "./omnimino "
+  else
+    io.stderr:write("\nThis utility needs 'omnimino' binary in the current directory or in the $PATH .\n\n")
+    os.exit(1)
+  end
+end
+
 
 --[[
 
@@ -172,6 +189,7 @@ local Branch={}
 
 local ScoreFileName = os.tmpname()
 local MessageFileName = os.tmpname()
+local Redirection = " 2> "  .. MessageFileName .. " > " .. ScoreFileName 
 
 local f = io.popen("ls *.mino 2>/dev/null", "r")
 
@@ -179,7 +197,7 @@ for MinoName in f:lines() do
 
   io.stderr:write(".")
 
-  local Result, ExitType, ExitCode = os.execute("./omnimino " .. MinoName .. " 2> "  .. MessageFileName .. " > " .. ScoreFileName )
+  local Success, ExitType, ExitCode = os.execute(OmniminoName .. MinoName .. Redirection)
 
   local CurGame = {}
   local Parent

@@ -46,14 +46,11 @@ end
 -- Try to locate "omnimino" binary --
 -------------------------------------
 
-local OmniminoName
+local OmniminoName = "omnimino "
 
-if (os.execute("which omnimino > /dev/null")) then 
-  OmniminoName = "omnimino "
-else
-  if (os.execute("test -x omnimino")) then
-    OmniminoName = "./omnimino "
-  else
+if not (os.execute("which omnimino > /dev/null")) then 
+  OmniminoName = "./omnimino "
+  if not (os.execute("test -x omnimino")) then
     io.stderr:write("\nThis utility needs 'omnimino' binary in the current directory or in the $PATH .\n\n")
     os.exit(1)
   end
@@ -104,91 +101,99 @@ Type	WMax	Goal	App	Metr	Grav	SL	FRC	GW	GH	FL	FR	WMin
 
 local Key={}
 
-local KeyNum = 14
+local GameType = {["g"] = 0, ["e"] = 1, ["p"] = 7}
 
-local KeyPos = { 1, 2, 4, 5, 13, 3, 6, 7, 8, 9, 10, 11, 12 , 14 }
-
-if arg[1] then
-  Key[1] = string.sub(arg[1],1,1)
-  if Key[1] == 'x' then Key[1] = nil end
+local SelectGameType = function(Arg, ArgPos)
+  Key[ArgPos] = GameType[string.sub(Arg,1,1)]
 end
 
-local StringToKeys = function(str, start)
-  if not str then return end
-  local strlen = string.len(str)
-  if strlen > 4 then strlen = 4 end
-  for i=1,strlen do
-    local NewKey = string.sub(str,i,i)
-    if NewKey == 'x' then
-      NewKey = nil
-    else
-      NewKey = tonumber(NewKey)
-    end
-    Key[KeyPos[start+i]] = NewKey;
+local Quad = function(Arg, ArgPos)
+  for i=1,4 do
+    Key[ArgPos[i]] = tonumber(string.sub(Arg,i,i))
   end
 end
 
-StringToKeys(arg[2],1)
-StringToKeys(arg[3],5)
-
-for i=0,3 do
-  if arg[4 + i] and arg[4 + i] ~= 'x' then
-    Key[KeyPos[10 + i]] = tonumber(arg[4 + i])
-  end
+local Single = function(Arg, ArgPos)
+  Key[ArgPos] = tonumber(Arg)
 end
 
+local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 13}}, {Quad, {3, 6, 7, 8}},
+                 {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
+
+for i,D in ipairs(Decoder) do
+  if arg[i] then
+    D[1](arg[i], D[2])
+  end
+end
 
 
 --------------------
 -- Reading .minos --
 --------------------
 
-local ParPos = { 4, 5, 2, 13, 6, 7, 8, 3, 9, 10, 11, 12, 14 }
+io.stderr:write("\nReading .minos ..")
+
+
+local ScoreFileName = os.tmpname()
+local MessageFileName = os.tmpname()
+
+
+local ReadGameData = function(Parms)
+
+  if Parms[1] == 0 or Parms[1] == 7 then
+    Parms.Meaningful = true
+  else
+    Parms[1] = 1
+  end
+
+  if Parms[1] == 7 then
+    return nil
+  end
+
+  local DataFile = io.open( Parms[1] == 0 and ScoreFileName or MessageFileName)
+  local GameData = DataFile:read(Parms[1] == 0 and "n" or "l")
+
+  DataFile:close()
+
+  return GameData
+end
 
 
 local ReadParameters = function(FileName, Parameter)
 
+  local ParmPos = { 4, 5, 2, 13, 6, 7, 8, 3, 9, 10, 11, 12, 14 }
+
   local MinoFile = io.open(FileName,"r")
-  local Parent
 
-  if Parameter[1] ~= "e" then
-    for i = 1, 13 do
-      local MinoLine = MinoFile:read("l")
-      local Value = string.match(MinoLine,"%w+")
-      Parameter[ParPos[i]] = tonumber(Value)
-    end
+  for i, Pos in ipairs(ParmPos) do
+    Parameter[Pos] = Parameter.Meaningful and tonumber(string.match(MinoFile:read("l"),"%w+")) or -1
   end
 
-  if Parameter[1] == "g" then
-    Parent = MinoFile:read("l")
+  if not Parameter.Success then
+    MinoFile:close()
+    return FileName
   end
 
-  if (not Parent) or (Parent == "none") then
-    Parent = FileName
-  end
+  local Parent = MinoFile:read("l")
 
   MinoFile:close()
 
-  return Parent
+  return Parent ~= "none" and Parent or FileName
 end
 
 
-local ParmsMatchKey = function(Parameter, Key)
-  for i = 1,KeyNum do
-    if Key[i] and Key[i] ~= Parameter[i] then return false end
+local ParmsMatchKey = function(Parameter)
+  for i, V in ipairs(Parameter) do
+    if Key[i] and Key[i] ~= V then return false end
   end
   return true
 end
 
 
-io.stderr:write("\nReading .minos ..")
-
 
 local Branch={}
 
 
-local ScoreFileName = os.tmpname()
-local MessageFileName = os.tmpname()
 local Redirection = " 2> "  .. MessageFileName .. " > " .. ScoreFileName 
 
 local f = io.popen("ls *.mino 2>/dev/null", "r")
@@ -197,36 +202,24 @@ for MinoName in f:lines() do
 
   io.stderr:write(".")
 
-  local Success, ExitType, ExitCode = os.execute(OmniminoName .. MinoName .. Redirection)
-
   local CurGame = {}
   local Parent
   local Parameter = {}
 
+  Parameter.Success, Parameter.ExitType, Parameter[1] = os.execute(OmniminoName .. MinoName .. Redirection)
+
   CurGame.Name = MinoName
 
-  if ExitCode == 0 then
-    Parameter[1] = "g"
-    local ScoreFile = io.open(ScoreFileName,"r")
-    CurGame.Data = ScoreFile:read("n")
-    ScoreFile:close()
-  elseif ExitCode == 7 then
-    Parameter[1] = "p"
-  else
-    Parameter[1] = "e"
-    local MessageFile = io.open(MessageFileName)
-    CurGame.Data = MessageFile:read("l")
-    MessageFile:close()
-  end
+  CurGame.Data = ReadGameData(Parameter)
 
   Parent = ReadParameters(MinoName, Parameter)
 
-  if ParmsMatchKey(Parameter, Key) then
+  if ParmsMatchKey(Parameter) then
     if Branch[Parent] then
       table.insert(Branch[Parent],CurGame)
     else
       Branch[Parent] = {}
-      Parameter[15] = Parent
+      table.insert(Parameter, Parent)
       Branch[Parent].Parms = Parameter
       Branch[Parent][1] = CurGame
     end
@@ -242,8 +235,8 @@ end
 
 if #SBranch == 0 then
 
-io.stderr:write(" not found\n\n")
-os.exit()
+  io.stderr:write(" no matches found\n\n")
+  os.exit()
 
 end
 
@@ -257,22 +250,11 @@ io.stderr:write(" Ok\n")
 
 
 local CompareBranches = function(B1, B2)
-  local Q1, Q2
+  local Q = B2.Parms
 
-  for i=1,KeyNum+1 do
-    Q1 = B1.Parms[i]
-    Q2 = B2.Parms[i]
-    if Q1 ~= Q2 then
-      if Q1 then
-        if Q2 then
-          return Q1 < Q2
-        else
-          return false
-        end
-      end
-      if Q2 then
-        return true
-      end
+  for i, V in ipairs(B1.Parms) do
+    if V ~= Q[i] then
+      return V < Q[i]
     end
   end
   return false
@@ -285,6 +267,19 @@ table.sort(SBranch, CompareBranches)
 -- Show results --
 ------------------
 
+io.stderr:write("\n")
+io.stderr:write("    Weight  A  M   G   Gr S  C   Glass   Fill   Scores\n")
+io.stderr:write("\n")
+
+
+local BrParms
+
+local Exhibit = function(ListOfPairs)
+  for i, Pair in ipairs(ListOfPairs) do
+    io.stderr:write(string.format("%" .. tostring(Pair[2])  .. "s", Key[Pair[1]] and " " or tostring(BrParms[Pair[1]]))) 
+  end
+end
+
 
 local CompareData = function(D1, D2)
   if D1.Data ~= D2.Data then
@@ -293,29 +288,14 @@ local CompareData = function(D1, D2)
   return D1.Name < D2.Name
 end
 
-io.stderr:write("\n")
-io.stderr:write("    Weight  A  M   G   Gr S  C   Glass   Fill   Scores\n")
-io.stderr:write("\n")
-
-
 
 for i, Br in ipairs(SBranch) do
 
-  local Exhibit = function(ListOfPairs)
-
-    local First, Second
-
-    for i, ThePair in ipairs(ListOfPairs) do
-      First = ThePair[1]
-      Second = ThePair[2]
-      io.stderr:write(string.format("%" .. tostring(Second)  .. "s", Key[First] and " " or tostring(Br.Parms[First]))) 
-    end
-  end
-
+  BrParms = Br.Parms
 
   io.stderr:write(string.format("%2d", i))
 
-  if Br.Parms[1] ~= "e" then
+  if Br.Parms.Meaningful then
     Exhibit{{2,4}}
     io.stderr:write(">=")
     Exhibit{{13, 1}, {4, 4}, {5, 3}, {3, 4}, {6, 4}, {7, 3}, {8, 3}, {9, 5}}

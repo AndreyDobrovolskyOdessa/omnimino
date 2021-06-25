@@ -38,7 +38,7 @@ Interactive output is written to stderr, resulting list is written to stdout.
 
 ]] )
 
-os.exit()
+  os.exit()
 
 end
 
@@ -225,6 +225,9 @@ for MinoName in f:lines() do
     end
   end
 end
+
+os.remove(ScoreFileName)
+os.remove(MessageFileName)
 
 local SBranch = {}
 

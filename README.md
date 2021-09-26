@@ -1,5 +1,9 @@
 # Omnimino
 
+
+![Simple omnimino](/samples/3.png)
+
+
 Console game inspired by polymino puzzle
 
 

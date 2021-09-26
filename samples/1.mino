@@ -1,0 +1,13 @@
+0    Aperture
+0    Metrics : 0 - abs(x0-x1)+abs(y0-y1), 1 - max(abs(x0-x1),abs(y0-y1))
+5    FigureWeightMax
+5    FigureWeightMin
+1    Gravity
+0    Single layer, new figure can not move through glass blocks
+1    FullRowClear
+1    Goal : 0 - fill, 1 - touch bottom, 2 - get flat top
+10   GlassWidth
+20   GlassHeight
+5    FillLevel, <GlassHeight
+8    Number of filling blocks >0, <GlassWidth
+1    SlotsUnique

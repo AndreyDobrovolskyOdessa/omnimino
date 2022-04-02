@@ -75,7 +75,7 @@ int FullRowClear;
 int Goal;
 
 int GlassWidth;
-int GlassHeightBuf; /* can change during game if FullRowClear */
+int GlassHeightBuf;
 int GlassFillLevel;
 int GlassFillRatio; /* < GlassWidth */
 
@@ -131,22 +131,10 @@ int GameModified=0;
 
 **************************************/
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 void ScaleUp(struct Coord *B,int *V){
+  (void) V;
   (B->x)<<=1; (B->y)<<=1;
 }
-
-void NegX(struct Coord *B,int *V){
-  (B->x)=-(B->x);
-}
-
-void PlaceIntoGlass(struct Coord *B, int *V){
-  GlassRow[(B->y)>>1] |= (1<<((B->x)>>1));
-}
-
-#pragma GCC diagnostic pop
 
 void FindLeft(struct Coord *B,int *V){
   if((*V)>(B->x)) (*V)=(B->x);
@@ -170,6 +158,11 @@ void AddX(struct Coord *B,int *V){
 
 void AddY(struct Coord *B,int *V){
   (B->y)+=(*V);
+}
+
+void NegX(struct Coord *B,int *V){
+  (void) V;
+  (B->x)=-(B->x);
 }
 
 void SwapXY(struct Coord *B,int *V){
@@ -205,7 +198,15 @@ void AndGlass(struct Coord *B, int *Err){
   (*Err) |= ( GlassRow[(B->y)>>1] & (1<<((B->x)>>1)) );
 }
 
-int ForEachIn(int FN, void (*Func)(struct Coord *, int *), int V){
+void PlaceIntoGlass(struct Coord *B, int *V){
+  (void) V;
+  GlassRow[(B->y)>>1] |= (1<<((B->x)>>1));
+}
+
+
+typedef void (*bfunc) (struct Coord *, int *);
+
+int ForEachIn(int FN, bfunc Func, int V){
   int i;
 
   for(i=BlockN[FN];i<BlockN[FN+1];i++)
@@ -214,17 +215,14 @@ int ForEachIn(int FN, void (*Func)(struct Coord *, int *), int V){
   return(V);
 }
 
-int CenterH(int FN){
-  return((ForEachIn(FN,FindLeft,INT_MAX)+ForEachIn(FN,FindRight,INT_MIN))>>1);
-}
 
-int CenterV(int FN){
-  return((ForEachIn(FN,FindBottom,INT_MAX)+ForEachIn(FN,FindTop,INT_MIN))>>1);
+int Center(int FN, bfunc FindMin, bfunc FindMax){
+  return((ForEachIn(FN,FindMin,INT_MAX)+ForEachIn(FN,FindMax,INT_MIN))>>1);
 }
 
 void Normalize(int FN,struct Coord *C){
-  (C->x)=CenterH(FN);
-  (C->y)=CenterV(FN);
+  (C->x)=Center(FN,FindLeft,FindRight);
+  (C->y)=Center(FN,FindBottom,FindTop);
   ForEachIn(FN,AddX,-(C->x));
   ForEachIn(FN,AddY,-(C->y));
 }
@@ -396,7 +394,6 @@ WINDOW *MyScr=NULL;
 void StartCurses(void){
   initscr();
   noecho();
-  raw();
   curs_set(0);
   keypad(stdscr,TRUE);
 }
@@ -424,18 +421,17 @@ void DrawGlass(int GlassRowN){
   }
 }
 
+
 int SelectGlassRow(void){
-  int GlassRowN,FCV;
-
-  FCV=CenterV((CurFigure<FigureNum)?CurFigure:(CurFigure-1))>>1;
-
-  GlassRowN=FCV+(FigureSize/2)+1;
+  int FCV=Center((CurFigure<FigureNum)?CurFigure:(CurFigure-1),FindBottom,FindTop)>>1;
+  int GlassRowN=FCV+(FigureSize/2)+1;
   if(GlassLevel>GlassRowN){
     GlassRowN=GlassLevel;
     if(GlassLevel>=getmaxy(MyScr)){
-      if(GlassLevel>(FCV+(getmaxy(MyScr)/2))){
-        GlassRowN=FCV+(getmaxy(MyScr)/2);
-        if((getmaxy(MyScr)/2)>FCV){
+      int Half=getmaxy(MyScr)/2;
+      if(GlassLevel>(FCV+Half)){
+        GlassRowN=FCV+Half;
+        if(Half>FCV){
           GlassRowN=getmaxy(MyScr)-1;
         }
       }
@@ -580,7 +576,6 @@ void Deploy(int FN,int NewX,int NewY){
 }
 
 void CheckGame(void){
-
   switch(Goal){
     case TOUCH_GOAL:
       if((ForEachIn(FigureNum,FindBottom,INT_MAX)>>1)==0)
@@ -600,7 +595,6 @@ void CheckGame(void){
 }
 
 int GetGlassState(void){
-
   if(NextFigure<CurFigure){
     memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow));
     GlassHeight=GlassHeightBuf;
@@ -664,7 +658,7 @@ void MoveBufUp(void){
   ForEachIn(FigureNum,AddY,2);
 }
 
-void CompoundOp(void (*F)(struct Coord *,int *)){
+void CompoundOp(bfunc F){
   struct Coord C;
 
   Normalize(FigureNum,&C);

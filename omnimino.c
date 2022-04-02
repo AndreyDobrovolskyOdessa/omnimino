@@ -425,6 +425,7 @@ void DrawGlass(int GlassRowN){
 int SelectGlassRow(void){
   int FCV=Center((CurFigure<FigureNum)?CurFigure:(CurFigure-1),FindBottom,FindTop)>>1;
   int GlassRowN=FCV+(FigureSize/2)+1;
+
   if(GlassLevel>GlassRowN){
     GlassRowN=GlassLevel;
     if(GlassLevel>=getmaxy(MyScr)){
@@ -447,32 +448,32 @@ void DrawBlock(struct Coord *B,int *GRN){
 
 
 void DrawQueue(void){
-  int LeftMargin,PlacesH,PlacesV,x,y,N;
+  int x,y;
   struct Coord C;
 
+  int SideLen=FigureSize+2;
+  int TwiSide=SideLen*2;
+  int LeftMargin=(GlassWidth+2)*2;
+  int PlacesH=(getmaxx(MyScr)-LeftMargin)/TwiSide;
+  int PlacesV=getmaxy(MyScr)/SideLen;
 
-  LeftMargin=(GlassWidth+2)*2;
-  PlacesH=(getmaxx(MyScr)-LeftMargin)/(2*(FigureSize+2));
-  PlacesV=getmaxy(MyScr)/(FigureSize+2);
+  int N=CurFigure+1;
 
-  LeftMargin+=FigureSize+2;
+  int OffsetX=LeftMargin+SideLen;
+  int OffsetYInit=-SideLen+1;
 
-  for(x=0,N=(CurFigure+1);(N<FigureNum)&&(x<PlacesH);x++){
+  for(x=0;(N<FigureNum)&&(x<PlacesH);x++,OffsetX+=TwiSide){
 
-    for(y=0;(N<FigureNum)&&(y<PlacesV);y++,N++){
+    int OffsetY=OffsetYInit;
 
+    for(y=0;(N<FigureNum)&&(y<PlacesV);y++,OffsetY-=TwiSide,N++){
       CopyFigure(FigureNum,N);
       Normalize(FigureNum,&C);
-
-      ForEachIn(FigureNum,AddX,LeftMargin+(2*x*(FigureSize+2)));
-      ForEachIn(FigureNum,AddY,-(FigureSize+2)-(2*y*(FigureSize+2))+1);
-
+      ForEachIn(FigureNum,AddX,OffsetX);
+      ForEachIn(FigureNum,AddY,OffsetY); 
       ForEachIn(FigureNum,DrawBlock,0);
-
     }
-
   }
-  
 }
 
 

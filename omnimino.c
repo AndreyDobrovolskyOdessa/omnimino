@@ -567,12 +567,12 @@ void ClearFullRows(void){
   GlassLevel-=FullRowNum;
 }
 
-void Deploy(int FN,int NewX,int NewY){
+void Deploy(int FN){
   struct Coord C;
 
   Normalize(FN,&C);
-  ForEachIn(FN,AddX,NewX<<1);
-  ForEachIn(FN,AddY,NewY<<1);
+  ForEachIn(FN,AddX,GlassWidth); /* impliciltly divided by 2 */
+  ForEachIn(FN,AddY,((GlassLevel+1)<<1)+FigureSize);
 }
 
 void CheckGame(void){
@@ -619,7 +619,7 @@ int GetGlassState(void){
   }
 
   if((CurFigure<FigureNum)&&(CurFigure>=Untouched)){
-    Deploy(CurFigure,GlassWidth/2,GlassLevel+(FigureSize/2)+1);
+    Deploy(CurFigure);
     Untouched=CurFigure+1;
     GameModified=1;
   }

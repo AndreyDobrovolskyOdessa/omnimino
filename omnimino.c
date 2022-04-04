@@ -93,7 +93,7 @@ int CurFigure;
 
 #define GLASS_SIZE (MAX_GLASS_HEIGHT+MAX_FIGURE_SIZE+1)
 
-unsigned int GlassRowBuf[GLASS_SIZE];
+unsigned int GlassRowBuf[GLASS_SIZE]={0};
 
 #define MAX_BLOCK_NUM ((MAX_GLASS_WIDTH*MAX_GLASS_HEIGHT)+(2*MAX_FIGURE_SIZE))
 
@@ -212,12 +212,16 @@ int ForEachIn(int FN, bfunc Func, int V){
   for(i=BlockN[FN];i<BlockN[FN+1];i++)
     (*Func)(Block+i,&V);
 
-  return(V);
+  return V;
 }
 
 
+int Dimension(int FN, bfunc FindMin, bfunc FindMax){
+  return (ForEachIn(FN,FindMin,INT_MAX)-ForEachIn(FN,FindMax,INT_MIN))>>1;
+}
+
 int Center(int FN, bfunc FindMin, bfunc FindMax){
-  return((ForEachIn(FN,FindMin,INT_MAX)+ForEachIn(FN,FindMax,INT_MIN))>>1);
+  return (ForEachIn(FN,FindMin,INT_MAX)+ForEachIn(FN,FindMax,INT_MIN))>>1;
 }
 
 void Normalize(int FN,struct Coord *C){
@@ -235,7 +239,7 @@ int CopyFigure(int DestN,int SrcN){
     BlockN[DestN+1]=BlockN[DestN]+Len;
   memcpy(Block+BlockN[DestN],Block+BlockN[SrcN],Len*sizeof(struct Coord));
 
-  return(DestN);
+  return DestN;
 }
 
 
@@ -250,7 +254,7 @@ int Unfilled(void){
     }
   }
 
-  return(s);
+  return s;
 }
 
 
@@ -284,7 +288,7 @@ void FillGlass(void){
 
 int FindBlock(struct Coord *B,struct Coord *A,int Len){
   for(;Len&&(((B->x)!=(A->x))||((B->y)!=(A->y)));Len--,A++);
-  return(Len);
+  return Len;
 }
 
 int SelectSlots(struct Coord *Slot,struct Coord *FBlock,int Weight){
@@ -305,7 +309,7 @@ int SelectSlots(struct Coord *Slot,struct Coord *FBlock,int Weight){
     }
   }
 
-  return(SlotNum);
+  return SlotNum;
 }
 
 #define MAX_SLOTS (MAX_FIGURE_SIZE*MAX_FIGURE_SIZE)
@@ -324,7 +328,7 @@ int NewFigure(struct Coord *F){
     if(!FindBlock(B,F,B-F))
       B++;
   }
-  return(B-F);
+  return B-F;
 }
 
 
@@ -334,7 +338,7 @@ int NewFigure(struct Coord *F){
 
 **************************************/
 
-int NewGame(void){
+void NewGame(void){
   int TotalArea;
 
 
@@ -349,8 +353,6 @@ int NewGame(void){
   }
 
   CurFigure=1; Untouched=NextFigure=0;
-
-  return(0);
 }
 
 
@@ -370,6 +372,8 @@ enum OM_Errors{
 
 int OM_Error=OM_OK;
 
+
+/*
 char *OM_Message[]={
   "Ok",
   "ncurses error: newwin(0,0,0,0) failed",
@@ -381,6 +385,7 @@ char *OM_Message[]={
   "New games allowed in interactive mode only",
   ""
 };
+*/
 
 /**************************************
 
@@ -439,7 +444,7 @@ int SelectGlassRow(void){
     }
   }
 
-  return(GlassRowN);
+  return GlassRowN;
 }
 
 void DrawBlock(struct Coord *B,int *GRN){
@@ -505,7 +510,8 @@ int ShowScreen(void){
 
   if(MyScr==NULL){
     if((MyScr=newwin(0,0,0,0))==NULL){
-      OM_Error=OM_NEWWIN_ERROR; return(1);
+      OM_Error=OM_NEWWIN_ERROR;
+      return 1;
     }
     refresh();
   }
@@ -525,12 +531,12 @@ int ShowScreen(void){
 
   wrefresh(MyScr);
 
-  return(0);
+  return 0;
 }
 
 /**************************************
 
-           Various game functions
+        Various game functions
 
 **************************************/
 
@@ -595,19 +601,24 @@ void CheckGame(void){
     GameOver=1;
 }
 
-int GetGlassState(void){
-  if(NextFigure<CurFigure){
-    memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow));
-    GlassHeight=GlassHeightBuf;
-    DetectGlassLevel();
-    CurFigure=0;
-    GameOver=0;
-    GoalReached=0;
-  }
+void RewindGlassState(void){
+  memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow));
+  GlassHeight=GlassHeightBuf;
+  DetectGlassLevel();
+  CurFigure=0;
+  GameOver=0;
+  GoalReached=0;
+}
+
+void GetGlassState(void){
+  if(NextFigure<CurFigure)
+    RewindGlassState();
 
   while(CurFigure<NextFigure){
     if((ForEachIn(CurFigure,FitGlass,0)!=0)||(ForEachIn(CurFigure,AndGlass,0)!=0)){
-      OM_Error=OM_GLASS_STATE_ERROR; return(1);
+      /* OM_Error=OM_GLASS_STATE_ERROR; return(1); */
+      Untouched=NextFigure=CurFigure;
+      break;
     }
     Drop(CurFigure++);
     CheckGame();
@@ -624,8 +635,6 @@ int GetGlassState(void){
     Untouched=CurFigure+1;
     GameModified=1;
   }
-
-  return(0);
 }
 
 /**************************************
@@ -691,35 +700,35 @@ int Attempt(void (*F)(void)){
       GameModified=1;
     }
   }
-  return(1); 
+  return 1; 
 }
 
 int MoveCurLeft(void){
-  return(Attempt(MoveBufLeft));
+  return Attempt(MoveBufLeft);
 }
 
 int MoveCurRight(void){
-  return(Attempt(MoveBufRight));
+  return Attempt(MoveBufRight);
 }
 
 int MoveCurDown(void){
-  return(Gravity?1:Attempt(MoveBufDown));
+  return Gravity?1:Attempt(MoveBufDown);
 }
 
 int MoveCurUp(void){
-  return(Gravity?1:Attempt(MoveBufUp));
+  return Gravity?1:Attempt(MoveBufUp);
 }
 
 int RotateCurCW(void){
-  return(Attempt(RotateBufCW));
+  return Attempt(RotateBufCW);
 }
 
 int RotateCurCCW(void){
-  return(Attempt(RotateBufCCW));
+  return Attempt(RotateBufCCW);
 }
 
 int MirrorCurVert(void){
-  return(Attempt(MirrorBufVert));
+  return Attempt(MirrorBufVert);
 }
 
 int DropCur(void){
@@ -728,34 +737,32 @@ int DropCur(void){
      (ForEachIn(CurFigure,AndGlass,0)==0)){
     NextFigure=CurFigure+1;
   }
-  return(1);
+  return 1;
 }
 
 int ScreenResize(void){
-
   delwin(MyScr); MyScr=NULL;
-
-  return(1);
+  return 1;
 }
 
 int UndoFigure(void){
   if(CurFigure>0)
     NextFigure=CurFigure-1;
-  return(1);
+  return 1;
 }
 
 int RedoFigure(void){
   if((CurFigure+1)<Untouched)
     NextFigure=CurFigure+1;
-  return(1);
+  return 1;
 }
 
 int Rewind(void){
-  NextFigure=0;  return(1);
+  NextFigure=0;  return 1;
 }
 
 int LastPlayed(void){
-  NextFigure=Untouched-1;  return(1);
+  NextFigure=Untouched-1;  return 1;
 }
 
 struct KBinding{
@@ -799,37 +806,42 @@ int GetCmd(void){
     for(P=KBindList;((Func=(P->Action))!=NULL)&&(Key!=(P->Key));P++);
   }
 
-  return((*Func)());
+  return (*Func)();
 }
 
 
 int Score(void){
-  return((Goal==FILL_GOAL)?Unfilled():(GoalReached?CurFigure:FigureNum));
+  return (Goal==FILL_GOAL)?Unfilled():(GoalReached?CurFigure:FigureNum);
 }
 
 
 int PlayGame(void){
-  int Tty=isatty(fileno(stdout));
+  int ScreenErr;
 
-  FullRow=((1<<(GlassWidth-1))<<1)-1;
+  StartCurses();
+  do
+    GetGlassState();
+  while(((ScreenErr=ShowScreen())==0)&&GetCmd());
+  endwin();
 
-  FigureSize=(Aperture==0)?FigureWeightMax:Aperture;
+  if(ScreenErr)
+    fprintf(stderr,"ncurses error: newwin(0,0,0,0) failed\n");
+  else
+    fprintf(stdout,"%d\n",Score());
 
-  if(Tty)
-    StartCurses();
-
-  while((GetGlassState()==0)&&Tty&&(ShowScreen()==0)&&GetCmd());
-
-  if(Tty)
-    endwin();
-  else if(GameModified)
-    OM_Error=OM_NEW_GAME_NOT_ALLOWED;
-
-  fprintf(stdout,"%d\n",Score());
-
-  return(OM_Error);
+  return ScreenErr;
 }
 
+
+int ScoreGame(void){
+  GetGlassState();
+  if(GameModified)
+    OM_Error=OM_NEW_GAME_NOT_ALLOWED;
+  else
+    fprintf(stdout,"%d\n",Score());
+
+  return 0;
+}
 
 /**************************************
 
@@ -882,28 +894,28 @@ int GetHash(char *FileName, char *HashStr){
   char Buf[10+OM_MAX_PATH]="md5sum ",Fmt[20];
 
   if(strlen(FileName)>=OM_MAX_PATH){
-    fprintf(stderr,"file name too long : %s\n",FileName); return(1);
+    fprintf(stderr,"file name too long : %s\n",FileName); return 1;
   }
 
   strcat(Buf,FileName);
 
   if((f=popen(Buf,"r"))==NULL){
-    fprintf(stderr,"can't open pipe '%s'\n",Buf); return(1);
+    fprintf(stderr,"can't open pipe '%s'\n",Buf); return 1;
   }
 
   sprintf(Fmt,"%%%ds%%*[^\\n]",OM_HASH_LEN-1-((int)sizeof(OM_ext)));
 
   if(fscanf(f,Fmt,HashStr)!=1){
-    fprintf(stderr,"error reading hash from pipe.\n"); return(1);
+    fprintf(stderr,"error reading hash from pipe.\n"); return 1;
   }
 
   strcat(HashStr,OM_ext);
 
   if(pclose(f)!=0){
-    fprintf(stderr,"error closing pipe.\n"); return(1);
+    fprintf(stderr,"error closing pipe.\n"); return 1;
   }
 
-  return(0);
+  return 0;
 }
 
 
@@ -919,50 +931,49 @@ int SaveGame(void){
   OM_Error=OM_SAVE_GAME_ERROR;
 
   if((fout=fopen(OM_tmp,"w"))==NULL){
-    fprintf(stderr,"can't open file for write : %s\n",OM_tmp); return(1);
+    fprintf(stderr,"can't open file for write : %s\n",OM_tmp); return 1;
   }
 
-  for(i=0;(ferror(fout)==0)&&(GameParAddr[i]!=NULL);i++)
+  for(i=0;GameParAddr[i]!=NULL;i++)
     fprintf(fout,"%u\n",*GameParAddr[i]);
 
-  if(ferror(fout)==0) fprintf(fout,"%s\n",ParentName);
-  if(ferror(fout)==0) fprintf(fout,"%u\n",FigureNum);
-  if(ferror(fout)==0) fprintf(fout,"%u\n",CurFigure);
+  fprintf(fout,"%s\n",ParentName);
+  fprintf(fout,"%u\n",FigureNum);
+  fprintf(fout,"%u\n",CurFigure);
 
-  for(i=0;(ferror(fout)==0)&&(i<GlassFillLevel);i++)
+  for(i=0;i<GlassFillLevel;i++)
     fprintf(fout,"%u;",GlassRowBuf[i]);
-  if(ferror(fout)==0) fprintf(fout,"\n");
+  fprintf(fout,"\n");
 
-  for(i=0;(ferror(fout)==0)&&(i<=FigureNum);i++)
+  for(i=0;i<=FigureNum;i++)
     fprintf(fout,"%u;",BlockN[i]);
-  if(ferror(fout)==0) fprintf(fout,"\n");
+  fprintf(fout,"\n");
 
-  for(i=0;(ferror(fout)==0)&&(i<BlockN[FigureNum]);i++)
+  for(i=0;i<BlockN[FigureNum];i++)
     fprintf(fout,"%d,%d;",Block[i].x,Block[i].y);
-  if(ferror(fout)==0) fprintf(fout,"\n");
+  fprintf(fout,"\n");
 
-  if(ferror(fout)==0) fprintf(fout,"%s\n",getenv("USER"));
-  if(ferror(fout)==0) fprintf(fout,"%u\n",(unsigned int)time(NULL));
+  fprintf(fout,"%s\n",getenv("USER"));
+  fprintf(fout,"%u\n",(unsigned int)time(NULL));
 
-  if(ferror(fout)!=0){
-    fprintf(stderr,"write data error.\n"); fclose(fout); return(1);
+  if(ferror(fout)){
+    fprintf(stderr,"write data error.\n"); fclose(fout); return 1;
   }
 
   if(fclose(fout)!=0){
-    fprintf(stderr,"close file error\n"); return(1);
+    fprintf(stderr,"close file error\n"); return 1;
   }
 
-  if(GetHash(OM_tmp,HashStr)!=0){
-    return(1);
-  }
+  if(GetHash(OM_tmp,HashStr)!=0)
+    return 1;
 
   if(rename(OM_tmp,HashStr)==-1){
-    fprintf(stderr,"rename error.\n"); return(1);
+    fprintf(stderr,"rename error.\n"); return 1;
   }
 
   OM_Error=OM_OK;
 
-  return(0);
+  return 0;
 }
 
 
@@ -990,6 +1001,8 @@ int CheckParameters(void){
     fprintf(stderr,"[3] FigureWeightMax (%d) > MAX_FIGURE_SIZE (%d).\n",FigureWeightMax,MAX_FIGURE_SIZE);
     Err=1;
   }
+
+  FigureSize=(Aperture==0)?FigureWeightMax:Aperture;
 
   if(FigureWeightMin<1){
     fprintf(stderr,"[4] FigureWeightMin (%d) < 1 .\n",FigureWeightMin);
@@ -1035,8 +1048,6 @@ int CheckParameters(void){
     Err=1;
   }
 
-  FigureSize=(Aperture==0)?FigureWeightMax:Aperture;
-
   if(GlassWidth<FigureSize){
     fprintf(stderr,"[9] GlassWidth (%d) < FigureSize (%d).\n",GlassWidth,FigureSize);
     Err=1;
@@ -1077,7 +1088,9 @@ int CheckParameters(void){
     Err=1;
   }
 
-  return(Err);
+  FullRow=((1<<(GlassWidth-1))<<1)-1;
+
+  return Err;
 }
 
 int LoadParameters(FILE *fin){
@@ -1085,32 +1098,49 @@ int LoadParameters(FILE *fin){
 
   for(i=0;GameParAddr[i]!=NULL;i++){
     if(fscanf(fin,"%u%*[^\n]\n",GameParAddr[i])!=1){
-      fprintf(stderr,"[%d] %s : load error.\n",i+1,GameParName[i]); return(1);
+      fprintf(stderr,"[%d] %s : load error.\n",i+1,GameParName[i]); return 1;
     }
   }
 
-  return(0);
+  return 0;
 }
 
-#define MAX_BLOCK ((MAX_GLASS_WIDTH*MAX_GLASS_HEIGHT)+MAX_FIGURE_SIZE)
+int WrongUnits(unsigned int R){
+  int n;
 
+  if((R&(~FullRow))!=0)
+    return 1;
+
+  for(n=0;R;R>>=1)
+    n+=R&1;
+
+  return n!=GlassFillRatio;
+}
 
 int LoadGameData(FILE *fin){
-  int i;
+  int i,FW;
   char Fmt[80];
 
   sprintf(Fmt,"%%%ds\\n",OM_STRLEN);
 
   if(fscanf(fin,Fmt,ParentName)!=1){
-    fprintf(stderr,"[19] ParentName : load error.\n"); return(1);
+    fprintf(stderr,"[14] ParentName : load error.\n"); return 1;
   }
 
   if(fscanf(fin,"%u",&FigureNum)!=1){
-    fprintf(stderr,"[14] FigureNum : load error.\n"); return(1);
+    fprintf(stderr,"[15] FigureNum : load error.\n"); return 1;
+  }
+
+  if (FigureNum>MAX_BLOCK_NUM){
+    fprintf(stderr,"[15] FigureNum (%d) > MAX_BLOCK_NUM (%d).\n",FigureNum,MAX_BLOCK_NUM); return 1;
   }
 
   if(fscanf(fin,"%u",&CurFigure)!=1){
-    fprintf(stderr,"[15] CurFigure : load error.\n"); return(1);
+    fprintf(stderr,"[16] CurFigure : load error.\n"); return 1;
+  }
+
+  if (CurFigure>FigureNum){
+    fprintf(stderr,"[16] CurFigure (%d) > [15] FigureNum (%d).\n",CurFigure,FigureNum); return 1;
   }
 
   NextFigure=CurFigure;
@@ -1118,23 +1148,57 @@ int LoadGameData(FILE *fin){
 
   for(i=0;i<GlassFillLevel;i++){
     if(fscanf(fin,"%u;",GlassRowBuf+i)!=1){
-      fprintf(stderr,"[16] GlassRow[%d] : load error.\n",i); return(1);
+      fprintf(stderr,"[17] GlassRow[%d] : load error.\n",i); return 1;
+    }
+    if(WrongUnits(GlassRowBuf[i])){
+      fprintf(stderr,"[17] Wrong GlassRow[%d] = %d.\n",i,GlassRowBuf[i]); return 1;
     }
   }
 
+  int TotalArea=(GlassWidth*GlassHeightBuf)-(GlassFillLevel*GlassFillRatio);
+
   for(i=0;i<=FigureNum;i++){
     if(fscanf(fin,"%u;",BlockN+i)!=1){
-      fprintf(stderr,"[17] BlockN[%d] : load error.\n",i); return(1);
+      fprintf(stderr,"[18] BlockN[%d] : load error.\n",i); return 1;
+    }
+    if(i==0){
+      if(BlockN[0]!=0){
+        fprintf(stderr,"[18] BlockN[0] must be 0.\n"); return 1;
+      }
+    } else {
+      FW=BlockN[i]-BlockN[i-1];
+      if(FW<FigureWeightMin){
+        fprintf(stderr,"[18] FigureWeight[%d] (%d) < FigureWeightMin (%d)\n",i-1,FW,FigureWeightMin); return 1;
+      }
+      if(FW>FigureWeightMax){
+        fprintf(stderr,"[18] FigureWeight[%d] (%d) > FigureWeightMax (%d)\n",i-1,FW,FigureWeightMax); return 1;
+      }
+      if(BlockN[i-1]>=TotalArea){
+        fprintf(stderr,"[18] Figure[%d] is unnecessary.\n",i-1); return 1;
+      }
     }
   }
 
   for(i=0;i<BlockN[FigureNum];i++){
     if(fscanf(fin,"%d,%d;",&(Block[i].x),&(Block[i].y))!=2){
-      fprintf(stderr,"[18] Block[%d] : load error.\n",i); return(1);
+      fprintf(stderr,"[19] Block[%d] : load error.\n",i); return 1;
     }
   }
 
-  return(0);
+  int FS;
+
+  for(i=0;i<FigureNum;i++){
+    FS=Dimension(i,FindLeft,FindRight);
+    if(FS>FigureSize){
+      fprintf(stderr,"[19] Figure[%d] width (%d) > FigureSize (%d)\n",i,FS,FigureSize); return 1;
+    }
+    FS=Dimension(i,FindBottom,FindTop);
+    if(FS>FigureSize){
+      fprintf(stderr,"[19] Figure[%d] height (%d) > FigureSize (%d)\n",i,FS,FigureSize); return 1;
+    }
+  }
+
+  return 0;
 }
 
 
@@ -1145,28 +1209,27 @@ int LoadGame(char *Name){
 
   OM_Error=OM_LOAD_GAME_PAR_ERROR;
 
-  if(GetHash(Name,HashStr)!=0){
-    return(1);
-  }
+  if(GetHash(Name,HashStr)!=0)
+    return 1;
 
   if((fin=fopen(Name,"r"))==NULL){
-    fprintf(stderr,"can't open file '%s' for read.\n",Name); return(1);
+    fprintf(stderr,"can't open file '%s' for read.\n",Name); return 1;
   }
 
   if((LoadParameters(fin)!=0)||(CheckParameters()!=0)){
-    fclose(fin); return(1);
+    fclose(fin); return 1;
   }
 
   OM_Error=OM_OK;
 
   if(strcmp(HashStr,basename(Name))!=0){
-    fclose(fin); strcpy(ParentName,"none"); return(NewGame());
+    fclose(fin); strcpy(ParentName,"none"); NewGame(); return 0;
   }
 
   OM_Error=OM_LOAD_GAME_DATA_ERROR;
 
   if(LoadGameData(fin)!=0){
-    fclose(fin); return(1);
+    fclose(fin); return 1;
   }
 
   fclose(fin);
@@ -1176,28 +1239,37 @@ int LoadGame(char *Name){
 
   OM_Error=OM_OK;
 
-  return(0);
+  return 0;
 }
 
 
 int ShowUsage(void){
-  fputs(
+  fprintf(stderr,
 "Omnimino 0.2 Copyright (C) 2019-2022 Andrey Dobrovolsky\n\n\
-Usage: omnimino infile\n\n",
-  stderr);
+Usage: omnimino infile\n\n");
 
   OM_Error=OM_MISSING_INPUT_FILE;
 
-  return(1);
+  return 1;
 }
 
 
 int main(int argc,char *argv[]){
 
-  (void)(((argc>1)?LoadGame(argv[1]):ShowUsage()) || PlayGame() || SaveGame());
+  (void)(
+    (
+      (argc>1)?
+        LoadGame(argv[1]):
+        ShowUsage()
+    ) || (
+      isatty(fileno(stdout))?
+        (PlayGame() || SaveGame()):
+        ScoreGame()
+    )
+  );
 
-  fprintf(stderr,"%s\n",OM_Message[OM_Error]);
+  /* fprintf(stderr,"%s\n",OM_Message[OM_Error]); */
 
-  return(OM_Error);
+  return OM_Error;
 }
 

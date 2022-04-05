@@ -100,7 +100,7 @@ unsigned int TimeStamp;
 int FigureNum;
 int CurFigure;
 
-unsigned int GlassRowBuf[GLASS_SIZE]={0};
+unsigned int GlassFillBuf[GLASS_SIZE]={0};
 
 int BlockN[MAX_BLOCK_NUM+2];
 
@@ -278,9 +278,9 @@ void FillGlass(void){
 
   for (i = 0 ; i < GlassFillLevel ; i++) {
     for (Places = GlassWidth, Blocks = GlassFillRatio ; Places > 0 ; Places--) {
-      GlassRowBuf[i] <<= 1;
+      GlassFillBuf[i] <<= 1;
       if ((rand() % Places) < Blocks) {
-        GlassRowBuf[i] |= 1; Blocks--;
+        GlassFillBuf[i] |= 1; Blocks--;
       }
     }
   }
@@ -608,7 +608,7 @@ void RewindGlassState(void){
   int i, GlassSize;
 
   for (i=0; i < GlassFillLevel; i++)
-    GlassRow[i] = GlassRowBuf[i];
+    GlassRow[i] = GlassFillBuf[i];
 
   GlassHeight=GlassHeightBuf;
   GlassSize = GlassHeight + FigureSize + 1;
@@ -952,7 +952,7 @@ int SaveGame(void){
   fprintf(fout,"%u\n",CurFigure);
 
   for(i=0;i<GlassFillLevel;i++)
-    fprintf(fout,"%u;",GlassRowBuf[i]);
+    fprintf(fout,"%u;",GlassFillBuf[i]);
   fprintf(fout,"\n");
 
   for(i=0;i<=FigureNum;i++)
@@ -1164,11 +1164,11 @@ int LoadGameData(FILE *fin){
   CurFigure=Untouched=NextFigure+1;
 
   for(i=0;i<GlassFillLevel;i++){
-    if(fscanf(fin,"%u;",GlassRowBuf+i)!=1){
+    if(fscanf(fin,"%u;",GlassFillBuf+i)!=1){
       fprintf(stderr,"[17] GlassRow[%d] : load error.\n",i); return 1;
     }
-    if(WrongUnits(GlassRowBuf[i])){
-      fprintf(stderr,"[17] Wrong GlassRow[%d] = %d.\n",i,GlassRowBuf[i]); return 1;
+    if(WrongUnits(GlassFillBuf[i])){
+      fprintf(stderr,"[17] Wrong GlassRow[%d] = %d.\n",i,GlassFillBuf[i]); return 1;
     }
   }
 

@@ -274,14 +274,13 @@ void DetectGlassLevel(void){
 **************************************/
 
 void FillGlass(void){
-  int Places,Blocks;
+  int i, Places, Blocks;
 
-  memset(GlassRowBuf,0,sizeof(GlassRowBuf));
-  for(GlassLevel=0;GlassLevel<GlassFillLevel;GlassLevel++){
-    for(Places=GlassWidth,Blocks=GlassFillRatio;Places>0;Places--){
-      GlassRowBuf[GlassLevel]<<=1;
-      if((rand()%Places)<Blocks){
-        GlassRowBuf[GlassLevel]|=1;Blocks--;
+  for (i = 0 ; i < GlassFillLevel ; i++) {
+    for (Places = GlassWidth, Blocks = GlassFillRatio ; Places > 0 ; Places--) {
+      GlassRowBuf[i] <<= 1;
+      if ((rand() % Places) < Blocks) {
+        GlassRowBuf[i] |= 1; Blocks--;
       }
     }
   }

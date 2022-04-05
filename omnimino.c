@@ -604,9 +604,21 @@ void CheckGame(void){
 }
 
 void RewindGlassState(void){
-  memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow));
+  /* memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow)); */
+
+  int i, GlassSize;
+
+  for (i=0; i < GlassFillLevel; i++)
+    GlassRow[i] = GlassRowBuf[i];
+
   GlassHeight=GlassHeightBuf;
-  DetectGlassLevel();
+  GlassSize = GlassHeight + FigureSize + 1;
+
+  for (; i < GlassSize; i++)
+    GlassRow[i] = 0;
+
+  /* DetectGlassLevel(); */
+  GlassLevel = GlassFillLevel;
   CurFigure=0;
   GameOver=0;
   GoalReached=0;

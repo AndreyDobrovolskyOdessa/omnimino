@@ -834,11 +834,12 @@ int PlayGame(void){
 
 
 int ScoreGame(void){
-  GetGlassState();
-  if(GameModified)
-    OM_Error=OM_NEW_GAME_NOT_ALLOWED;
+  if (Untouched > 0){
+    GetGlassState();
+    fprintf(stdout, "%d\n", Score());
+  }
   else
-    fprintf(stdout,"%d\n",Score());
+    OM_Error = OM_NEW_GAME_NOT_ALLOWED;
 
   return 0;
 }

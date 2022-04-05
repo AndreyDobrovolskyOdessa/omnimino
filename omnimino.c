@@ -560,20 +560,22 @@ void Drop(int FigN){
 }
 
 void ClearFullRows(void){
-  int r,w,FullRowNum;
+  int r, w, FullRowNum, GlassSize;
 
-  for(r=w=0;r<GlassHeight;r++){
-    if(GlassRow[r]!=FullRow)
-      GlassRow[w++]=GlassRow[r];
+  GlassSize = GlassHeight + FigureSize + 1;
+
+  for(r = w = 0 ; r < GlassSize ; r++){
+    if (GlassRow[r] != FullRow)
+      GlassRow[w++] = GlassRow[r];
   }
 
-  FullRowNum=r-w;
+  FullRowNum = r - w;
 
-  for(;w<(GlassHeight+FigureSize+1);w++)
-    GlassRow[w]=0;
+  for(;w < GlassSize ; w++)
+    GlassRow[w] = 0;
 
-  GlassHeight-=FullRowNum;
-  GlassLevel-=FullRowNum;
+  GlassHeight -= FullRowNum;
+  GlassLevel -= FullRowNum;
 }
 
 void Deploy(int FN){
@@ -604,8 +606,6 @@ void CheckGame(void){
 }
 
 void RewindGlassState(void){
-  /* memcpy(GlassRow,GlassRowBuf,sizeof(GlassRow)); */
-
   int i, GlassSize;
 
   for (i=0; i < GlassFillLevel; i++)
@@ -617,7 +617,6 @@ void RewindGlassState(void){
   for (; i < GlassSize; i++)
     GlassRow[i] = 0;
 
-  /* DetectGlassLevel(); */
   GlassLevel = GlassFillLevel;
   CurFigure=0;
   GameOver=0;
@@ -635,13 +634,11 @@ void GetGlassState(void){
       break;
     }
     Drop(CurFigure++);
-    CheckGame();
-    if(GameOver){
-        NextFigure=CurFigure;
-        break;
-    }
     if(FullRowClear)
       ClearFullRows();
+    CheckGame();
+    if(GameOver)
+      NextFigure=CurFigure;
   }
 
   if((CurFigure<FigureNum)&&(CurFigure>=Untouched)){

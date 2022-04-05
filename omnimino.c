@@ -48,6 +48,11 @@ struct Coord{
 #define MAX_GLASS_WIDTH 32 /*UINT_WIDTH*/
 #define MAX_GLASS_HEIGHT 256
 
+#define GLASS_SIZE (MAX_GLASS_HEIGHT+MAX_FIGURE_SIZE+1)
+#define MAX_BLOCK_NUM ((MAX_GLASS_WIDTH*MAX_GLASS_HEIGHT)+(2*MAX_FIGURE_SIZE))
+
+#define OM_STRLEN 80
+
 enum GoalTypes {
   FILL_GOAL,
   TOUCH_GOAL,
@@ -87,22 +92,19 @@ int FigureSlotsUnique;
 
 **************************************/
 
-int FigureNum;
+char ParentName[OM_STRLEN+1];
 
+char PlayerName[OM_STRLEN+1];
+unsigned int TimeStamp;
+
+int FigureNum;
 int CurFigure;
 
-#define GLASS_SIZE (MAX_GLASS_HEIGHT+MAX_FIGURE_SIZE+1)
-
 unsigned int GlassRowBuf[GLASS_SIZE]={0};
-
-#define MAX_BLOCK_NUM ((MAX_GLASS_WIDTH*MAX_GLASS_HEIGHT)+(2*MAX_FIGURE_SIZE))
 
 int BlockN[MAX_BLOCK_NUM+2];
 
 struct Coord Block[MAX_BLOCK_NUM];
-
-#define OM_STRLEN 80
-char ParentName[OM_STRLEN]="none";
 
 /**************************************
 
@@ -884,15 +886,13 @@ char *GameParName[]={
   NULL
 };
 
-#define OM_HASH_LEN 80
 #define OM_MAX_PATH 1024
 
-char OM_ext[]=".mino";
-char OM_tmp[]="tmp.mino";
 
-int GetHash(char *FileName, char *HashStr){
+int GetHash(const char *FileName, char *HashStr){
   FILE *f;
   char Buf[10+OM_MAX_PATH]="md5sum ",Fmt[20];
+  const char OM_ext[]=".mino";
 
   if(strlen(FileName)>=OM_MAX_PATH){
     fprintf(stderr,"file name too long : %s\n",FileName); return 1;
@@ -904,7 +904,7 @@ int GetHash(char *FileName, char *HashStr){
     fprintf(stderr,"can't open pipe '%s'\n",Buf); return 1;
   }
 
-  sprintf(Fmt,"%%%ds%%*[^\\n]",OM_HASH_LEN-1-((int)sizeof(OM_ext)));
+  sprintf(Fmt,"%%%ds%%*[^\\n]",OM_STRLEN-((int)sizeof(OM_ext)));
 
   if(fscanf(f,Fmt,HashStr)!=1){
     fprintf(stderr,"error reading hash from pipe.\n"); return 1;
@@ -924,7 +924,8 @@ int GetHash(char *FileName, char *HashStr){
 int SaveGame(void){
   FILE *fout;
   int i;
-  char HashStr[OM_HASH_LEN];
+  char HashStr[OM_STRLEN+1], *UserName;
+  const char OM_tmp[]="tmp.mino";
 
   if(!GameModified)
     return(0);
@@ -954,8 +955,15 @@ int SaveGame(void){
     fprintf(fout,"%d,%d;",Block[i].x,Block[i].y);
   fprintf(fout,"\n");
 
-  fprintf(fout,"%s\n",getenv("USER"));
-  fprintf(fout,"%u\n",(unsigned int)time(NULL));
+  UserName = getenv("USER");
+  if (!UserName)
+    UserName = "anonymous";
+  snprintf(PlayerName,OM_STRLEN,"%s",UserName);
+
+  fprintf(fout,"%s\n",PlayerName);
+
+  TimeStamp = (unsigned int)time(NULL);
+  fprintf(fout,"%u\n",TimeStamp);
 
   if(ferror(fout)){
     fprintf(stderr,"write data error.\n"); fclose(fout); return 1;
@@ -1206,7 +1214,7 @@ int LoadGameData(FILE *fin){
 
 int LoadGame(char *Name){
   FILE *fin;
-  char HashStr[OM_HASH_LEN];
+  char HashStr[OM_STRLEN+1];
 
   OM_Error=OM_LOAD_GAME_PAR_ERROR;
 

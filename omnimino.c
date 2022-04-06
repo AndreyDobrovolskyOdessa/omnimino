@@ -1214,7 +1214,7 @@ int LoadGame(char *Name){
 
 int ShowUsage(void){
   fprintf(stderr,
-"Omnimino 0.2 Copyright (C) 2019-2022 Andrey Dobrovolsky\n\n\
+"Omnimino 0.3 Copyright (C) 2019-2022 Andrey Dobrovolsky\n\n\
 Usage: omnimino infile\n\n");
 
   return 1;

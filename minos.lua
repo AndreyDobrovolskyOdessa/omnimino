@@ -139,26 +139,6 @@ MakeKey(arg)
 
 io.stderr:write("\nReading .minos ..")
 
-local ReadGameData = function(Parms)
-
-  if Parms[1] == 0 or Parms[1] == 7 then
-    Parms.Meaningful = true
-  else
-    Parms[1] = 1
-  end
-
-  if Parms[1] == 7 then
-    return nil
-  end
-
-  local DataFile = io.open( Parms[1] == 0 and ScoreFileName or MessageFileName)
-  local GameData = DataFile:read(Parms[1] == 0 and "n" or "l")
-
-  DataFile:close()
-
-  return GameData
-end
-
 
 local ReadParameters = function(FileName, Parameter)
 
@@ -226,14 +206,14 @@ for MinoName in f:lines() do
     table.insert(Branch[Parent],CurGame)
   else
     Branch[Parent] = {}
-    table.insert(Parameter, Parent)
+    -- table.insert(Parameter, Parent)
     Branch[Parent].Parms = Parameter
     Branch[Parent][1] = CurGame
   end
 
 end
 
-io.stderr:write(" Ok\n\n")
+io.stderr:write(" Ok\n")
 
 
 

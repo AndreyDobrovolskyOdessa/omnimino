@@ -530,14 +530,17 @@ void ClearFullRows(void){
 
   GlassSize = GlassHeight + FigureSize + 1;
 
-  for(r = w = 0 ; r < GlassSize ; r++){
+  for(r = w = 0 ; r < GlassHeight ; r++){
     if (GlassRow[r] != FullRow)
       GlassRow[w++] = GlassRow[r];
   }
 
   FullRowNum = r - w;
 
-  for(;w < GlassSize ; w++)
+  for(; r < GlassSize ; r++, w++)
+    GlassRow[w] = GlassRow[r];
+
+  for(; w < GlassSize ; w++)
     GlassRow[w] = 0;
 
   GlassHeight -= FullRowNum;

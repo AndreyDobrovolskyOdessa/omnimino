@@ -606,10 +606,12 @@ void GetGlassState(void){
       NextFigure=CurFigure;
   }
 
-  if((CurFigure<FigureNum)&&(CurFigure>=Untouched)){
-    Deploy(CurFigure);
+  if(CurFigure>=Untouched){
+    if(CurFigure<FigureNum){
+      Deploy(CurFigure);
+      GameModified=1;
+    }
     Untouched=CurFigure+1;
-    GameModified=1;
   }
 }
 

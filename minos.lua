@@ -32,7 +32,8 @@ of the error message is shown.
 
 After descriptions  will be shown,  You will be asked  to choose sequentional
 number of the branch desired (optional)  and sequential number of the game in
-the branch (optional). Empty input means "list all".
+the branch (optional). Empty input means "list all". You can enter the new
+filter keys and repeat the search.
 
 Interactive output is written to stderr, resulting list is written to stdout.
 
@@ -99,9 +100,9 @@ Type	WMax	Goal	App	Metr	Grav	SL	FRC	GW	GH	FL	FR	WMin
 -- Make search keys of commannd-line arguments --
 -------------------------------------------------
 
-local Key={}
+local Key
 
-local GameType = {["g"] = 0, ["e"] = 1, ["p"] = 7}
+local GameType = {["g"] = 1, ["p"] = 2, ["e"] = 3}
 
 local SelectGameType = function(Arg, ArgPos)
   Key[ArgPos] = GameType[string.sub(Arg,1,1)]
@@ -120,23 +121,23 @@ end
 local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 13}}, {Quad, {3, 6, 7, 8}},
                  {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
 
-for i,D in ipairs(Decoder) do
-  if arg[i] then
-    D[1](arg[i], D[2])
+local MakeKey = function(arg)
+  Key = {}
+
+  for i,D in ipairs(Decoder) do
+    if arg[i] then
+      D[1](arg[i], D[2])
+    end
   end
 end
 
+MakeKey(arg)
 
 --------------------
 -- Reading .minos --
 --------------------
 
 io.stderr:write("\nReading .minos ..")
-
-
-local ScoreFileName = os.tmpname()
-local MessageFileName = os.tmpname()
-
 
 local ReadGameData = function(Parms)
 
@@ -166,10 +167,10 @@ local ReadParameters = function(FileName, Parameter)
   local MinoFile = io.open(FileName,"r")
 
   for i, Pos in ipairs(ParmPos) do
-    Parameter[Pos] = Parameter.Meaningful and tonumber(string.match(MinoFile:read("l"),"%w+")) or -1
+    Parameter[Pos] = Parameter.Success and tonumber(string.match(MinoFile:read("l"),"%w+")) or -1
   end
 
-  if not Parameter.Success then
+  if Parameter[1] ~= 1 then
     MinoFile:close()
     return FileName
   end
@@ -194,8 +195,6 @@ end
 local Branch={}
 
 
-local Redirection = " 2> "  .. MessageFileName .. " > " .. ScoreFileName 
-
 local f = io.popen("ls *.mino 2>/dev/null", "r")
 
 for MinoName in f:lines() do
@@ -206,45 +205,52 @@ for MinoName in f:lines() do
   local Parent
   local Parameter = {}
 
-  Parameter.Success, Parameter.ExitType, Parameter[1] = os.execute(OmniminoName .. MinoName .. Redirection)
-
+  local MinoPipe = io.popen(OmniminoName .. MinoName .. " 2>&1")
   CurGame.Name = MinoName
+  CurGame.Data = MinoPipe:read();
+  Parameter.Success = MinoPipe:close()
 
-  CurGame.Data = ReadGameData(Parameter)
+  if Parameter.Success then
+    if CurGame.Data then
+      Parameter[1] = 1
+    else
+      Parameter[1] = 2
+    end
+  else
+    Parameter[1] = 3
+  end
 
   Parent = ReadParameters(MinoName, Parameter)
 
-  if ParmsMatchKey(Parameter) then
-    if Branch[Parent] then
-      table.insert(Branch[Parent],CurGame)
-    else
-      Branch[Parent] = {}
-      table.insert(Parameter, Parent)
-      Branch[Parent].Parms = Parameter
-      Branch[Parent][1] = CurGame
-    end
+  if Branch[Parent] then
+    table.insert(Branch[Parent],CurGame)
+  else
+    Branch[Parent] = {}
+    table.insert(Parameter, Parent)
+    Branch[Parent].Parms = Parameter
+    Branch[Parent][1] = CurGame
   end
+
 end
 
-os.remove(ScoreFileName)
-os.remove(MessageFileName)
+io.stderr:write(" Ok\n\n")
 
-local SBranch = {}
+
+
+local SBranch
+
+local BN
+local GN
+
+while true do -----------------------------------------------------------
+
+SBranch = {}
 
 for i,j in pairs(Branch) do
-  table.insert(SBranch,j)
+  if ParmsMatchKey(j.Parms) then
+    table.insert(SBranch,j)
+  end
 end
-
-
-if #SBranch == 0 then
-
-  io.stderr:write(" no matches found\n\n")
-  os.exit()
-
-end
-
-io.stderr:write(" Ok\n")
-
 
 
 ----------------------
@@ -298,7 +304,7 @@ for i, Br in ipairs(SBranch) do
 
   io.stderr:write(string.format("%2d", i))
 
-  if Br.Parms.Meaningful then
+  if Br.Parms.Success then
     Exhibit{{2,4}}
     io.stderr:write(">=")
     Exhibit{{13, 1}, {4, 4}, {5, 3}, {3, 4}, {6, 4}, {7, 3}, {8, 3}, {9, 5}}
@@ -318,22 +324,31 @@ for i, Br in ipairs(SBranch) do
   io.stderr:write("\n")
 end
 
-io.stderr:write("\nEnter [ branch [ game ] ] : ")
+io.stderr:write("\nEnter branch [ game ] or new filter keys : ")
 local AnsL = io.read("l")
 
-local Ans={}
+  local Ans={}
 
 for i in string.gmatch(AnsL,"%w+") do
   table.insert(Ans,i)
 end
 
+  BN = tonumber(Ans[1])
+  GN = tonumber(Ans[2])
+
+  if #Ans == 0 or BN then
+    break
+  end
+
+  MakeKey(Ans)
+
+end ------------------------------------------------------------------
+
+io.stderr:write("\n")
 
 --------------------------------------
 -- Writing list of .mino file names --
 --------------------------------------
-
-local BN = tonumber(Ans[1])
-local GN = tonumber(Ans[2])
 
 for i, Br in ipairs(SBranch) do
   if not BN or BN == i then

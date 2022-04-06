@@ -357,37 +357,6 @@ void NewGame(void){
 }
 
 
-/*     Errors    */
-
-enum OM_Errors{
-  OM_OK=0,
-  OM_NEWWIN_ERROR,
-  OM_GLASS_STATE_ERROR,
-  OM_SAVE_GAME_ERROR,
-  OM_LOAD_GAME_PAR_ERROR,
-  OM_LOAD_GAME_DATA_ERROR,
-  OM_MISSING_INPUT_FILE,
-  OM_NEW_GAME_NOT_ALLOWED,
-  OM_ERROR_MAX
-};
-
-int OM_Error=OM_OK;
-
-
-/*
-char *OM_Message[]={
-  "Ok",
-  "ncurses error: newwin(0,0,0,0) failed",
-  "PlayGame error: GetGlassState : figure out of glass or overlapping",
-  "SaveGame error",
-  "Load game parameters error",
-  "Load game data error",
-  "Missing input file",
-  "New games allowed in interactive mode only",
-  ""
-};
-*/
-
 /**************************************
 
 	Screen functions
@@ -510,10 +479,8 @@ int ShowScreen(void){
   int GlassRowN;
 
   if(MyScr==NULL){
-    if((MyScr=newwin(0,0,0,0))==NULL){
-      OM_Error=OM_NEWWIN_ERROR;
+    if((MyScr=newwin(0,0,0,0))==NULL)
       return 1;
-    }
     refresh();
   }
 
@@ -628,7 +595,6 @@ void GetGlassState(void){
 
   while(CurFigure<NextFigure){
     if((ForEachIn(CurFigure,FitGlass,0)!=0)||(ForEachIn(CurFigure,AndGlass,0)!=0)){
-      /* OM_Error=OM_GLASS_STATE_ERROR; return(1); */
       Untouched=NextFigure=CurFigure;
       break;
     }
@@ -848,8 +814,6 @@ int ScoreGame(void){
     GetGlassState();
     fprintf(stdout, "%d\n", Score());
   }
-  else
-    OM_Error = OM_NEW_GAME_NOT_ALLOWED;
 
   return 0;
 }
@@ -938,8 +902,6 @@ int SaveGame(void){
   if(!GameModified)
     return(0);
 
-  OM_Error=OM_SAVE_GAME_ERROR;
-
   if((fout=fopen(OM_tmp,"w"))==NULL){
     fprintf(stderr,"can't open file for write : %s\n",OM_tmp); return 1;
   }
@@ -987,8 +949,6 @@ int SaveGame(void){
   if(rename(OM_tmp,HashStr)==-1){
     fprintf(stderr,"rename error.\n"); return 1;
   }
-
-  OM_Error=OM_OK;
 
   return 0;
 }
@@ -1224,8 +1184,6 @@ int LoadGame(char *Name){
   FILE *fin;
   char HashStr[OM_STRLEN+1];
 
-  OM_Error=OM_LOAD_GAME_PAR_ERROR;
-
   if(GetHash(Name,HashStr)!=0)
     return 1;
 
@@ -1237,13 +1195,9 @@ int LoadGame(char *Name){
     fclose(fin); return 1;
   }
 
-  OM_Error=OM_OK;
-
   if(strcmp(HashStr,basename(Name))!=0){
     fclose(fin); strcpy(ParentName,"none"); NewGame(); return 0;
   }
-
-  OM_Error=OM_LOAD_GAME_DATA_ERROR;
 
   if(LoadGameData(fin)!=0){
     fclose(fin); return 1;
@@ -1254,8 +1208,6 @@ int LoadGame(char *Name){
   if(strcmp(ParentName,"none")==0)
     strcpy(ParentName,basename(Name));
 
-  OM_Error=OM_OK;
-
   return 0;
 }
 
@@ -1265,15 +1217,13 @@ int ShowUsage(void){
 "Omnimino 0.2 Copyright (C) 2019-2022 Andrey Dobrovolsky\n\n\
 Usage: omnimino infile\n\n");
 
-  OM_Error=OM_MISSING_INPUT_FILE;
-
   return 1;
 }
 
 
 int main(int argc,char *argv[]){
 
-  (void)(
+  return (
     (
       (argc>1)?
         LoadGame(argv[1]):
@@ -1284,9 +1234,5 @@ int main(int argc,char *argv[]){
         ScoreGame()
     )
   );
-
-  /* fprintf(stderr,"%s\n",OM_Message[OM_Error]); */
-
-  return OM_Error;
 }
 

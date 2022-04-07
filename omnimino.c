@@ -863,12 +863,17 @@ char *GameParName[]={
   NULL
 };
 
+
+#define stringize(s) stringyze(s)
+#define stringyze(s) #s
+
+
 #define OM_MAX_PATH 1024
 
 
 int GetHash(const char *FileName, char *HashStr){
   FILE *f;
-  char Buf[10+OM_MAX_PATH]="md5sum ",Fmt[20];
+  char Buf[10+OM_MAX_PATH]="md5sum ";
   const char OM_ext[]=".mino";
 
   if(strlen(FileName)>=OM_MAX_PATH){
@@ -881,12 +886,11 @@ int GetHash(const char *FileName, char *HashStr){
     fprintf(stderr,"can't open pipe '%s'\n",Buf); return 1;
   }
 
-  sprintf(Fmt,"%%%ds%%*[^\\n]",OM_STRLEN-((int)sizeof(OM_ext)));
-
-  if(fscanf(f,Fmt,HashStr)!=1){
+  if (fscanf(f,"%" stringize(OM_STRLEN) "s", HashStr) != 1){
     fprintf(stderr,"error reading hash from pipe.\n"); return 1;
   }
 
+  HashStr[OM_STRLEN - sizeof(OM_ext)] = 0;
   strcat(HashStr,OM_ext);
 
   if(pclose(f)!=0){
@@ -1101,11 +1105,8 @@ int WrongUnits(unsigned int R){
 
 int LoadGameData(FILE *fin){
   int i,FW;
-  char Fmt[80];
 
-  sprintf(Fmt,"%%%ds\\n",OM_STRLEN);
-
-  if(fscanf(fin,Fmt,ParentName)!=1){
+  if(fscanf(fin,"%" stringize(OM_STRLEN) "s%*[^\n]\n",ParentName)!=1){
     fprintf(stderr,"[14] ParentName : load error.\n"); return 1;
   }
 

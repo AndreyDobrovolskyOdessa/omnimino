@@ -145,15 +145,7 @@ for MinoName in f:lines() do
   CurGame.Data = MinoPipe:read();
   Parameter.Success = MinoPipe:close()
 
-  if Parameter.Success then
-    if CurGame.Data then
-      Parameter[1] = 1
-    else
-      Parameter[1] = 2
-    end
-  else
-    Parameter[1] = 3
-  end
+  Parameter[1] = Parameter.Success and (CurGame.Data and 1 or 2) or 3
 
   Parent = ReadParameters(MinoName, Parameter)
 
@@ -161,7 +153,6 @@ for MinoName in f:lines() do
     table.insert(Branch[Parent],CurGame)
   else
     Branch[Parent] = {}
-    -- table.insert(Parameter, Parent)
     Branch[Parent].Parms = Parameter
     Branch[Parent][1] = CurGame
   end

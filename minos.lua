@@ -96,43 +96,6 @@ Type	WMax	Goal	App	Metr	Grav	SL	FRC	GW	GH	FL	FR	WMin
 ]]
 
 
--------------------------------------------------
--- Make search keys of commannd-line arguments --
--------------------------------------------------
-
-local Key
-
-local GameType = {["g"] = 1, ["p"] = 2, ["e"] = 3}
-
-local SelectGameType = function(Arg, ArgPos)
-  Key[ArgPos] = GameType[string.sub(Arg,1,1)]
-end
-
-local Quad = function(Arg, ArgPos)
-  for i=1,4 do
-    Key[ArgPos[i]] = tonumber(string.sub(Arg,i,i))
-  end
-end
-
-local Single = function(Arg, ArgPos)
-  Key[ArgPos] = tonumber(Arg)
-end
-
-local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 13}}, {Quad, {3, 6, 7, 8}},
-                 {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
-
-local MakeKey = function(arg)
-  Key = {}
-
-  for i,D in ipairs(Decoder) do
-    if arg[i] then
-      D[1](arg[i], D[2])
-    end
-  end
-end
-
-MakeKey(arg)
-
 --------------------
 -- Reading .minos --
 --------------------
@@ -160,14 +123,6 @@ local ReadParameters = function(FileName, Parameter)
   MinoFile:close()
 
   return Parent ~= "none" and Parent or FileName
-end
-
-
-local ParmsMatchKey = function(Parameter)
-  for i, V in ipairs(Parameter) do
-    if Key[i] and Key[i] ~= V then return false end
-  end
-  return true
 end
 
 
@@ -216,26 +171,60 @@ end
 io.stderr:write(" Ok\n")
 
 
+-------------------------------------------------
+-- Make filter keys of commannd-line arguments --
+-------------------------------------------------
 
-local SBranch
+local MakeKey = function(arg)
+  Key = {}
 
-local BN
-local GN
+  local GameType = {["g"] = 1, ["p"] = 2, ["e"] = 3}
 
-while true do -----------------------------------------------------------
-
-SBranch = {}
-
-for i,j in pairs(Branch) do
-  if ParmsMatchKey(j.Parms) then
-    table.insert(SBranch,j)
+  local SelectGameType = function(Arg, ArgPos)
+    Key[ArgPos] = GameType[string.sub(Arg,1,1)]
   end
+
+  local Quad = function(Arg, ArgPos)
+    for i=1,4 do
+      Key[ArgPos[i]] = tonumber(string.sub(Arg,i,i))
+    end
+  end
+
+  local Single = function(Arg, ArgPos)
+    Key[ArgPos] = tonumber(Arg)
+  end
+
+  local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 13}}, {Quad, {3, 6, 7, 8}},
+                 {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
+
+  for i,D in ipairs(Decoder) do
+    if arg[i] then
+      D[1](arg[i], D[2])
+    end
+  end
+
+  return Key
 end
 
 
-----------------------
--- Sorting branches --
-----------------------
+local SelectBranchesMatching = function(Key)
+  local SBranch = {}
+
+  local ParmsMatchKey = function(Parameter)
+    for i, V in ipairs(Parameter) do
+      if Key[i] and Key[i] ~= V then return false end
+    end
+    return true
+  end
+
+  for i,j in pairs(Branch) do
+    if ParmsMatchKey(j.Parms) then
+      table.insert(SBranch,j)
+    end
+  end
+
+  return SBranch
+end
 
 
 local CompareBranches = function(B1, B2)
@@ -249,80 +238,90 @@ local CompareBranches = function(B1, B2)
   return false
 end
 
-table.sort(SBranch, CompareBranches)
 
+local ReadAndSplitInputLine = function()
+  io.stderr:write("\nEnter branch [ game ] or new filter keys : ")
+  local AnsL = io.stdin:read("l") or "" -- if input pipe is empty
 
-------------------
--- Show results --
-------------------
+  local Ans = {}
 
-io.stderr:write("\n")
-io.stderr:write("    Weight  A  M   G   Gr S  C   Glass   Fill   Scores\n")
-io.stderr:write("\n")
-
-
-local BrParms
-
-local Exhibit = function(ListOfPairs)
-  for i, Pair in ipairs(ListOfPairs) do
-    io.stderr:write(string.format("%" .. tostring(Pair[2])  .. "s", Key[Pair[1]] and " " or tostring(BrParms[Pair[1]]))) 
+  for i in string.gmatch(AnsL,"%w+") do
+    table.insert(Ans,i)
   end
+
+  return Ans
 end
 
 
-local CompareData = function(D1, D2)
-  if D1.Data ~= D2.Data then
-    return D1.Data < D2.Data
-  end
-  return D1.Name < D2.Name
-end
+local ShowSortedBranches = function(SBranch)
+  local BrParms
 
-
-for i, Br in ipairs(SBranch) do
-
-  BrParms = Br.Parms
-
-  io.stderr:write(string.format("%2d", i))
-
-  if Br.Parms.Success then
-    Exhibit{{2,4}}
-    io.stderr:write(">=")
-    Exhibit{{13, 1}, {4, 4}, {5, 3}, {3, 4}, {6, 4}, {7, 3}, {8, 3}, {9, 5}}
-    io.stderr:write("*")
-    Exhibit{{10, -3}, {11, 4}}
-    io.stderr:write("*")
-    Exhibit{{12, -3}}
-  end
-
-  table.sort(Br,CompareData)
-
-  for j, k in ipairs(Br) do
-    if k.Data then
-      io.stderr:write(" ", k.Data)
+  local Exhibit = function(ListOfPairs)
+    for i, Pair in ipairs(ListOfPairs) do
+      io.stderr:write(string.format("%" .. tostring(Pair[2])  .. "s", Key[Pair[1]] and " " or tostring(BrParms[Pair[1]]))) 
     end
   end
+
+  local CompareData = function(D1, D2)
+    if D1.Data ~= D2.Data then
+      return D1.Data < D2.Data
+    end
+    return D1.Name < D2.Name
+  end
+
+
   io.stderr:write("\n")
+  io.stderr:write("    Weight  A  M   G   Gr S  C   Glass   Fill   Scores\n")
+  io.stderr:write("\n")
+
+  for i, Br in ipairs(SBranch) do
+
+    BrParms = Br.Parms
+
+    io.stderr:write(string.format("%2d", i))
+
+    if Br.Parms.Success then
+      Exhibit{{2,4}}
+      io.stderr:write(">=")
+      Exhibit{{13, 1}, {4, 4}, {5, 3}, {3, 4}, {6, 4}, {7, 3}, {8, 3}, {9, 5}}
+      io.stderr:write("*")
+      Exhibit{{10, -3}, {11, 4}}
+      io.stderr:write("*")
+      Exhibit{{12, -3}}
+    end
+
+    table.sort(Br,CompareData)
+
+    for j, k in ipairs(Br) do
+      if k.Data then
+        io.stderr:write(" ", k.Data)
+      end
+    end
+    io.stderr:write("\n")
+  end
 end
 
-io.stderr:write("\nEnter branch [ game ] or new filter keys : ")
-local AnsL = io.stdin:read("l") or "" -- if input pipe is empty
 
-  local Ans={}
+local SBranch
 
-for i in string.gmatch(AnsL,"%w+") do
-  table.insert(Ans,i)
-end
+local Ans = arg
+local BN
+local GN
+
+repeat ------------------------------------------------------------------------
+
+  SBranch = SelectBranchesMatching(MakeKey(Ans))
+
+  table.sort(SBranch, CompareBranches)
+
+  ShowSortedBranches(SBranch)
+
+  Ans = ReadAndSplitInputLine()
 
   BN = tonumber(Ans[1])
   GN = tonumber(Ans[2])
 
-  if #Ans == 0 or BN then
-    break
-  end
-
-  MakeKey(Ans)
-
-end ------------------------------------------------------------------
+until #Ans == 0 or BN ---------------------------------------------------------
 
 io.stderr:write("\n")
 

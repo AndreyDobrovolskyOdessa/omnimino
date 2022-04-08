@@ -136,13 +136,9 @@ for MinoName in f:lines() do
 
   io.stderr:write(".")
 
-  local CurGame = {}
-  local Parameter = {}
-
   local MinoPipe = io.popen(OmniminoName .. MinoName .. " 2>&1")
-  CurGame.Name = MinoName
-  CurGame.Data = MinoPipe:read();
-  Parameter.Success = MinoPipe:close()
+  local CurGame = {Name = MinoName, Data = MinoPipe:read()}
+  local Parameter = {Success = MinoPipe:close()}
 
   Parameter[1] = Parameter.Success and (CurGame.Data and 1 or 2) or 3
 
@@ -151,14 +147,11 @@ for MinoName in f:lines() do
   if Branch[Parent] then
     table.insert(Branch[Parent], CurGame)
   else
-    Branch[Parent] = {}
-    Branch[Parent].Parms = Parameter
-    Branch[Parent][1] = CurGame
+    Branch[Parent] = {Parms = Parameter, CurGame}
   end
-
 end
 
-io.stderr:write(" Ok\n")
+io.stderr:write(f:close() and " Ok\n" or " error\n")
 
 
 -------------------------------------------------

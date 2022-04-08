@@ -305,7 +305,7 @@ for i, Br in ipairs(SBranch) do
 end
 
 io.stderr:write("\nEnter branch [ game ] or new filter keys : ")
-local AnsL = io.read("l")
+local AnsL = io.stdin:read("l") or "" -- if input pipe is empty
 
   local Ans={}
 

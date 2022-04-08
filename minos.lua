@@ -113,16 +113,16 @@ local ReadParameters = function(FileName, Parameter)
     Parameter[Pos] = Parameter.Success and tonumber(string.match(MinoFile:read("l"),"%w+")) or -1
   end
 
-  if Parameter[1] ~= 1 then
-    MinoFile:close()
-    return FileName
-  end
+  table.insert(Parameter,FileName)
 
-  local Parent = MinoFile:read("l")
+  if Parameter[1] == 1 then
+    local Parent = MinoFile:read("l")
+    if Parent ~= "none" then Parameter[#Parameter] = Parent end
+  end
 
   MinoFile:close()
 
-  return Parent ~= "none" and Parent or FileName
+  return Parameter[#Parameter]
 end
 
 
@@ -137,7 +137,6 @@ for MinoName in f:lines() do
   io.stderr:write(".")
 
   local CurGame = {}
-  local Parent
   local Parameter = {}
 
   local MinoPipe = io.popen(OmniminoName .. MinoName .. " 2>&1")
@@ -147,10 +146,10 @@ for MinoName in f:lines() do
 
   Parameter[1] = Parameter.Success and (CurGame.Data and 1 or 2) or 3
 
-  Parent = ReadParameters(MinoName, Parameter)
+  local Parent = ReadParameters(MinoName, Parameter)
 
   if Branch[Parent] then
-    table.insert(Branch[Parent],CurGame)
+    table.insert(Branch[Parent], CurGame)
   else
     Branch[Parent] = {}
     Branch[Parent].Parms = Parameter
@@ -186,7 +185,7 @@ local MakeKey = function(arg)
   end
 
   local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 13}}, {Quad, {3, 6, 7, 8}},
-                 {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
+                   {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
 
   for i,D in ipairs(Decoder) do
     if arg[i] then
@@ -261,9 +260,7 @@ local ShowSortedBranches = function(SBranch)
   end
 
 
-  io.stderr:write("\n")
-  io.stderr:write("    Weight  A  M   G   Gr S  C   Glass   Fill   Scores\n")
-  io.stderr:write("\n")
+  io.stderr:write("\n    Weight  A  M  Goal G  S  C   Glass   Fill   Scores\n\n")
 
   for i, Br in ipairs(SBranch) do
 

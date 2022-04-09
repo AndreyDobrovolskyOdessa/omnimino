@@ -1059,11 +1059,6 @@ int CheckParameters(void){
     Err=1;
   }
 
-  if(GlassFillRatio<1){
-    fprintf(stderr,"[12] GlassFillRatio (%d) < 1 .\n",GlassFillRatio);
-    Err=1;
-  }
-
   if(GlassFillRatio>=GlassWidth){
     fprintf(stderr,"[12] GlassFillRatio (%d) >= [9] GlassWidth (%d).\n",GlassFillRatio,GlassWidth);
     Err=1;

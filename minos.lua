@@ -314,11 +314,10 @@ for i, Br in ipairs(SBranch) do
   if not BN or BN == i then
     for j, k in ipairs(Br) do
       if not GN or GN == j then
-        io.stdout:write(" ", k.Name)
+        io.stdout:write(k.Name,"\n")
       end
     end
   end
 end
 
-io.stdout:write("\n")
 

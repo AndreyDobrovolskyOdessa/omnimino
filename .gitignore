@@ -1,2 +1,3 @@
 omnimino
 *.mino
+.dep*

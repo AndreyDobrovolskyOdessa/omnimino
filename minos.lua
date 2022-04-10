@@ -57,6 +57,8 @@ if not (os.execute("which omnimino > /dev/null")) then
   end
 end
 
+-- local OmniminoName = "./omnimino "
+
 
 --[[
 
@@ -100,59 +102,30 @@ Type	WMax	Goal	App	Metr	Grav	SL	FRC	GW	GH	FL	FR	WMin
 -- Reading .minos --
 --------------------
 
-io.stderr:write("\nReading .minos ..")
-
-
-local ReadParameters = function(FileName, Parameter)
-
-  local ParmPos = { 4, 5, 2, 13, 6, 7, 8, 3, 9, 10, 11, 12, 14 }
-
-  local MinoFile = io.open(FileName,"r")
-
-  for i, Pos in ipairs(ParmPos) do
-    Parameter[Pos] = Parameter.Success and tonumber(string.match(MinoFile:read("l"),"%w+")) or -1
-  end
-
-  table.insert(Parameter,FileName)
-
-  if Parameter[1] == 1 then
-    local Parent = MinoFile:read("l")
-    if Parent ~= "none" then Parameter[#Parameter] = Parent end
-  end
-
-  MinoFile:close()
-
-  return Parameter[#Parameter]
-end
-
-
 
 local Branch={}
 
 
-local f = io.popen("ls *.mino 2>/dev/null", "r")
+local pipe = io.popen("ls *.mino | " .. OmniminoName, "r")
+local chunk = assert(pipe:read("a"))
+assert(pipe:close())
+local f = load("_G = nil _ENV = nil return {" .. chunk .. "}")
 
-for MinoName in f:lines() do
-
-  io.stderr:write(".")
-
-  local MinoPipe = io.popen(OmniminoName .. MinoName .. " 2>&1")
-  local CurGame = {Name = MinoName, Data = MinoPipe:read()}
-  local Parameter = {Success = MinoPipe:close()}
-
-  Parameter[1] = Parameter.Success and (CurGame.Data and 1 or 2) or 3
-
-  local Parent = ReadParameters(MinoName, Parameter)
-
-  if Branch[Parent] then
-    table.insert(Branch[Parent], CurGame)
-  else
-    Branch[Parent] = {Parms = Parameter, CurGame}
-  end
+if not f then
+  print("Bad chunk") os.exit(1)
 end
 
-io.stderr:write(f:close() and " Ok\n" or " error\n")
+local IBranch = f()
 
+for i,B in ipairs(IBranch) do
+  local P = B.Parameters
+  local Parent = P[#P]
+  if Branch[Parent] then
+    table.insert(Branch[Parent], B.Data)
+  else
+    Branch[Parent] = {Parms = P, B.Data}
+  end
+end
 
 -------------------------------------------------
 -- Make filter keys of commannd-line arguments --
@@ -222,8 +195,8 @@ local CompareBranches = function(B1, B2)
 end
 
 
-local ReadAndSplitInputLine = function()
-  io.stderr:write("\nEnter branch [ game ] or new filter keys : ")
+local ReadAndSplitInputLine = function(Subject)
+  io.stderr:write("\nEnter " .. Subject .. " or new filter keys : ")
   local AnsL = io.stdin:read("l") or "" -- if input pipe is empty
 
   local Ans = {}
@@ -246,14 +219,16 @@ local ShowSortedBranches = function(SBranch)
   end
 
   local CompareData = function(D1, D2)
-    if D1.Data ~= D2.Data then
-      return D1.Data < D2.Data
+    for i = #D1, 1, -1 do
+      if D1[i] ~= D2[i] then
+        return D1[i] < D2[i]
+      end
     end
-    return D1.Name < D2.Name
+    return false
   end
 
 
-  io.stderr:write("\n    Weight  A  M  Goal G  S  C   Glass   Fill   Scores\n\n")
+  io.stderr:write("\n    Weight  A  M  Goal G  S  C   Glass   Fill  SU   Scores\n\n")
 
   for i, Br in ipairs(SBranch) do
 
@@ -261,25 +236,39 @@ local ShowSortedBranches = function(SBranch)
 
     io.stderr:write(string.format("%2d", i))
 
-    if Br.Parms.Success then
+    if Br.Parms[1] ~= 3 then
       Exhibit{{2,4}}
       io.stderr:write(">=")
-      Exhibit{{13, 1}, {4, 4}, {5, 3}, {3, 4}, {6, 4}, {7, 3}, {8, 3}, {9, 5}}
+      Exhibit{{14, 1}, {4, 4}, {5, 3}, {3, 4}, {6, 4}, {7, 3}, {8, 3}, {9, 5}}
       io.stderr:write("*")
       Exhibit{{10, -3}, {11, 4}}
       io.stderr:write("*")
-      Exhibit{{12, -3}}
+      Exhibit{{12, -4}, {13,-3}}
     end
 
     table.sort(Br,CompareData)
 
     for j, k in ipairs(Br) do
-      if k.Data then
-        io.stderr:write(" ", k.Data)
+      if k[4] then
+        io.stderr:write(" ", k[4])
       end
     end
     io.stderr:write("\n")
   end
+end
+
+
+local ShowSortedGames = function(B)
+
+  io.stderr:write("\n      Score            Date               Player\n\n")
+  for i = 1, #B do
+    io.stderr:write(string.format("%2d",i))
+    io.stderr:write(string.format("%7s",B[i][4]))
+    io.stderr:write(string.format("%30s",os.date("%c",B[i][3])))
+    io.stderr:write(string.format("   %s",B[i][2]))
+    io.stderr:write("\n")
+  end
+  io.stderr:write("\n")
 end
 
 
@@ -291,20 +280,34 @@ local GN
 
 repeat ------------------------------------------------------------------------
 
+repeat -----------------------------------------
+
   SBranch = SelectBranchesMatching(MakeKey(Ans))
 
   table.sort(SBranch, CompareBranches)
 
   ShowSortedBranches(SBranch)
 
-  Ans = ReadAndSplitInputLine()
+  Ans = ReadAndSplitInputLine("branch [ game ]")
 
   BN = tonumber(Ans[1])
   GN = tonumber(Ans[2])
 
-until #Ans == 0 or BN ---------------------------------------------------------
+until #Ans == 0 or BN --------------------------
 
-io.stderr:write("\n")
+  io.stderr:write("\n")
+
+  if #Ans == 0 or GN or (not SBranch[BN]) or #SBranch[BN] < 2 then break end
+
+  ShowSortedGames(SBranch[BN])
+
+  Ans = ReadAndSplitInputLine("game")
+
+  GN = tonumber(Ans[1])
+
+until #Ans == 0 or GN ---------------------------------------------------------
+
+  io.stderr:write("\n")
 
 --------------------------------------
 -- Writing list of .mino file names --
@@ -314,7 +317,7 @@ for i, Br in ipairs(SBranch) do
   if not BN or BN == i then
     for j, k in ipairs(Br) do
       if not GN or GN == j then
-        io.stdout:write(k.Name,"\n")
+        io.stdout:write(k[1],"\n")
       end
     end
   end

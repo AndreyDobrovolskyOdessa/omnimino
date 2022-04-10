@@ -354,6 +354,7 @@ void NewGame(void){
   }
 
   CurFigure=1; Untouched=NextFigure=0;
+  strcpy(ParentName,"none");
 }
 
 
@@ -553,6 +554,7 @@ void Deploy(int FN){
   Normalize(FN,&C);
   ForEachIn(FN,AddX,GlassWidth); /* impliciltly divided by 2 */
   ForEachIn(FN,AddY,((GlassLevel+1)<<1)+FigureSize);
+  GameModified = 1;
 }
 
 void CheckGame(void){
@@ -610,10 +612,8 @@ void GetGlassState(void){
   }
 
   if(CurFigure>=Untouched){
-    if(CurFigure<FigureNum){
+    if(CurFigure<FigureNum)
       Deploy(CurFigure);
-      GameModified=1;
-    }
     Untouched=CurFigure+1;
   }
 }
@@ -798,6 +798,9 @@ int Score(void){
 
 int PlayGame(void){
   int ScreenErr;
+
+  if (FigureNum == 0)
+    NewGame();
 
   StartCurses();
   do
@@ -1197,7 +1200,7 @@ int LoadGame(char *Name){
   }
 
   if(strcmp(HashStr,basename(Name))!=0){
-    fclose(fin); strcpy(ParentName,"none"); NewGame(); return 0;
+    fclose(fin); FigureNum = 0; return 0;
   }
 
   if(LoadGameData(fin)!=0){

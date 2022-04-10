@@ -818,7 +818,7 @@ int PlayGame(void){
 
 
 int ScoreGame(void){
-  if (Untouched > 0){
+  if (FigureNum > 0){
     GetGlassState();
     fprintf(stdout, "%d\n", Score());
   }

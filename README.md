@@ -193,6 +193,14 @@ Replay the latest recorded game.
 
 Remove all corrupted .mino files in the current directory.
 
+    echo x | ./omnimino p1.mino
+
+Create new game record instance according to p1.mino preset.
+
+    echo x | ./omnimino p2.mino | cat
+
+Create new game instance and see its description in Lua notation..
+
 
 Although You can take a look at
 

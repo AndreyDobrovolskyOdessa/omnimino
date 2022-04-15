@@ -1278,7 +1278,7 @@ void ExportGame(void){
 
   fprintf(stdout,"%u, ", GameType);
   for (i = 0; i < PARNUM ; i++){
-    fprintf(stdout,"%u, ", Par[Order[i]]);
+    fprintf(stdout,"%d, ", Par[Order[i]]);
   }
   fprintf(stdout,"\"%s\", ", ParentName);
 

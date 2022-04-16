@@ -380,20 +380,24 @@ WINDOW *MyScr = NULL;
 
 void StartCurses(void) {
   Screen = newterm(NULL, stderr, stdin);
-  if (!Screen)
-    return;
-  set_term(Screen);
-  noecho();
-  curs_set(0);
-  keypad(stdscr, TRUE);
+  if (Screen) {
+    set_term(Screen);
+    noecho();
+    curs_set(0);
+    keypad(stdscr, TRUE);
+  }
 }
 
 void StopCurses() {
-  if (!Screen)
-    return;
-  endwin();
-  delscreen(Screen);
-  Screen = NULL;
+  if (Screen) {
+    if (MyScr) {
+      delwin(MyScr);
+      MyScr = NULL;
+    }
+    endwin();
+    delscreen(Screen);
+    Screen = NULL;
+  }
 }
 
 
@@ -499,31 +503,29 @@ void DrawStatus(void) {
 }
 
 int ShowScreen(void) {
-  int GlassRowN;
+  if (Screen) {
+    if (MyScr == NULL) {
+      if ((MyScr = newwin(0, 0, 0, 0)) == NULL)
+        return 0;
+      refresh();
+    }
 
-  if (!Screen)
-    return 1;
+    werase(MyScr);
 
-  if (MyScr == NULL) {
-    if ((MyScr = newwin(0, 0, 0, 0)) == NULL)
-      return 0;
-    refresh();
+    if (((unsigned int)getmaxx(MyScr) < ((P.GlassWidth + 2) * 2)) || ((unsigned int)getmaxy(MyScr) < (MAX_FIGURE_SIZE * 2))){
+      mvwaddstr(MyScr, 0, 0, "Screen too small");
+    } else {
+      int GlassRowN = SelectGlassRow();
+
+      DrawGlass(GlassRowN);
+      if (CurFigure < FigureNum)
+        ForEachIn(CurFigure, DrawBlock, GlassRowN);
+      DrawQueue();
+      DrawStatus();
+    }
+
+    wrefresh(MyScr);
   }
-
-  werase(MyScr);
-
-  if (((unsigned int)getmaxx(MyScr) < ((P.GlassWidth + 2) * 2)) || ((unsigned int)getmaxy(MyScr) < (MAX_FIGURE_SIZE * 2))){
-    mvwaddstr(MyScr, 0, 0, "Screen too small");
-  } else {
-    GlassRowN = SelectGlassRow();
-    DrawGlass(GlassRowN);
-    if (CurFigure < FigureNum)
-      ForEachIn(CurFigure, DrawBlock, GlassRowN);
-    DrawQueue();
-    DrawStatus();
-  }
-
-  wrefresh(MyScr);
 
   return 1;
 }
@@ -826,11 +828,6 @@ void PlayGame(void){
     GetGlassState();
   while (ShowScreen() && GetCmd());
 
-  if (MyScr) {
-    delwin(MyScr);
-    MyScr = NULL;
-  }
-
   StopCurses();
 }
 
@@ -886,9 +883,6 @@ void SaveGame(void){
 
   int fd;
 
-
-  if(!GameModified)
-    return;
 
   StorePtr = Buf;
   StoreFree = BUFSIZE;
@@ -1017,7 +1011,6 @@ int CheckParameters(void){
 
 
 char *LoadPtr;
-int Loaded;
 
 
 int ReadInt(int *V, int Delim) {
@@ -1034,7 +1027,6 @@ int ReadInt(int *V, int Delim) {
     while (*EndPtr && (*EndPtr++ != '\n'));
   }
 
-  Loaded += EndPtr - LoadPtr;
   LoadPtr = EndPtr;
 
   return 0; 
@@ -1172,9 +1164,8 @@ int LoadData(void) {
     Msg = "[16] CurFigure : load error.";
   } else if (CurFigure > FigureNum) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] FigureNum (%d).",CurFigure,FigureNum);
-  } else if (ReadGlassFill() != 0) {
-    /* Messages done inside function */
-  } else if ((ReadFigures() == 0) &&
+  } else if ((ReadGlassFill() == 0) &&
+             (ReadFigures() == 0) &&
              (ReadBlocks() == 0) &&
              (CheckFigures() == 0)) {
     ReadString(PlayerName); /* skip new line following block descriptions */
@@ -1233,7 +1224,6 @@ int LoadGame(char *Name) {
   strcat(BufName, ".mino");
 
   LoadPtr = Buf;
-  Loaded = 0;
 
   if((LoadParameters() != 0) || (CheckParameters() != 0)){
     return 1;
@@ -1314,7 +1304,8 @@ int main(int argc,char *argv[]){
     for (argi = 1; argi < argc; argi++){
       if (LoadGame(argv[argi]) == 0) {
         PlayGame();
-        SaveGame();
+        if (GameModified)
+          SaveGame();
       }
       Report();
     }

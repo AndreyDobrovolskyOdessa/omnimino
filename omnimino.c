@@ -1090,6 +1090,10 @@ int ReadFigures(void) {
     }
   }
 
+  if (BlockN[FigureNum] < TotalArea) {
+    Msg = "[18] Not enough blocks to cover the glass free area."; return 1;
+  }
+
   return 0;
 }
 
@@ -1133,6 +1137,8 @@ int LoadData(void) {
     Msg = "[15] FigureNum : load error.";
   } else if (FigureNum > MAX_BLOCK_NUM) {
     snprintf(MsgBuf, OM_STRLEN, "[15] FigureNum (%d) > MAX_BLOCK_NUM (%d).",FigureNum,MAX_BLOCK_NUM);
+  } else if (FigureNum == 0) {
+    Msg = "[15] FigureNum must not be 0.";
   } else if (ReadInt((int *)&CurFigure, 0) != 0) {
     Msg = "[16] CurFigure : load error.";
   } else if (CurFigure > FigureNum) {

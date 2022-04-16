@@ -651,13 +651,15 @@ void GetGlassState(void) {
 
 **************************************/
 
-int ExitWithSave(void){
-  return(0);
+int KeepPlaying;
+
+void ExitWithSave(void){
+  KeepPlaying = 0;
 }
 
-int ExitWithoutSave(void){
+void ExitWithoutSave(void){
   GameModified=0;
-  return(0);
+  KeepPlaying = 0;
 }
 
 void MoveBufLeft(void){
@@ -697,7 +699,7 @@ void RotateBufCCW(void){
   CompoundOp(RotCCW);
 }
 
-int Attempt(void (*F)(void)){
+void Attempt(void (*F)(void)){
   if(!GameOver){
     CopyFigure(FigureNum,CurFigure);
     (*F)();
@@ -708,113 +710,111 @@ int Attempt(void (*F)(void)){
       GameModified=1;
     }
   }
-  return 1; 
 }
 
-int MoveCurLeft(void){
-  return Attempt(MoveBufLeft);
+void MoveCurLeft(void){
+  Attempt(MoveBufLeft);
 }
 
-int MoveCurRight(void){
-  return Attempt(MoveBufRight);
+void MoveCurRight(void){
+  Attempt(MoveBufRight);
 }
 
-int MoveCurDown(void){
-  return P.Gravity ? 1 : Attempt(MoveBufDown);
+void MoveCurDown(void){
+  if (!P.Gravity)
+    Attempt(MoveBufDown);
 }
 
-int MoveCurUp(void){
-  return P.Gravity ? 1 : Attempt(MoveBufUp);
+void MoveCurUp(void){
+  if (!P.Gravity)
+    Attempt(MoveBufUp);
 }
 
-int RotateCurCW(void){
-  return Attempt(RotateBufCW);
+void RotateCurCW(void){
+  Attempt(RotateBufCW);
 }
 
-int RotateCurCCW(void){
-  return Attempt(RotateBufCCW);
+void RotateCurCCW(void){
+  Attempt(RotateBufCCW);
 }
 
-int MirrorCurVert(void){
-  return Attempt(MirrorBufVert);
+void MirrorCurVert(void){
+  Attempt(MirrorBufVert);
 }
 
-int DropCur(void){
+void DropCur(void){
   if((!GameOver)&&
      (ForEachIn(CurFigure,FitGlass,0)==0)&&
      (ForEachIn(CurFigure,AndGlass,0)==0)){
     NextFigure=CurFigure+1;
   }
-  return 1;
 }
 
-int ScreenResize(void){
-  delwin(MyScr); MyScr=NULL;
-  return 1;
+void ScreenResize(void){
+  delwin(MyScr);
+  MyScr=NULL;
 }
 
-int UndoFigure(void){
+void UndoFigure(void){
   if(CurFigure>0)
     NextFigure=CurFigure-1;
-  return 1;
 }
 
-int RedoFigure(void){
+void RedoFigure(void){
   if((CurFigure+1)<Untouched)
     NextFigure=CurFigure+1;
-  return 1;
 }
 
-int Rewind(void){
-  NextFigure=0;  return 1;
+void Rewind(void){
+  NextFigure=0;
 }
 
-int LastPlayed(void){
-  NextFigure=Untouched-1;  return 1;
+void LastPlayed(void){
+  NextFigure=Untouched-1;
 }
 
-struct KBinding{
+struct KBinding {
   int Key;
-  int (*Action)(void);
-} KBindList[]={
-  {'q',ExitWithoutSave},
-  {'x',ExitWithSave},
-  {'h',MoveCurLeft},
-  {'l',MoveCurRight},
-  {'k',MoveCurUp},
-  {'j',MoveCurDown},
-  {KEY_LEFT,MoveCurLeft},
-  {KEY_RIGHT,MoveCurRight},
-  {KEY_UP,MoveCurUp},
-  {KEY_DOWN,MoveCurDown},
-  {'a',RotateCurCCW},
-  {'f',RotateCurCW},
-  {'s',MirrorCurVert},
-  {'d',MirrorCurVert},
-  {' ',DropCur},
-  {'^',Rewind},
-  {'$',LastPlayed},
+  void (*Action)(void);
+} KBindList[] = {
+  {'q', ExitWithoutSave},
+  {'x', ExitWithSave},
+  {'h', MoveCurLeft},
+  {'l', MoveCurRight},
+  {'k', MoveCurUp},
+  {'j', MoveCurDown},
+  {KEY_LEFT, MoveCurLeft},
+  {KEY_RIGHT, MoveCurRight},
+  {KEY_UP, MoveCurUp},
+  {KEY_DOWN, MoveCurDown},
+  {'a', RotateCurCCW},
+  {'f', RotateCurCW},
+  {'s', MirrorCurVert},
+  {'d', MirrorCurVert},
+  {' ', DropCur},
+  {'^', Rewind},
+  {'$', LastPlayed},
 
-  {'u',UndoFigure},
-  {'r',RedoFigure},
+  {'u', UndoFigure},
+  {'r', RedoFigure},
 
-  {KEY_RESIZE,ScreenResize},
+  {KEY_RESIZE, ScreenResize},
 
-  {0,NULL}
+  {0, NULL}
 };
 
 
-int GetCmd(void){
+void ExecuteCmd(void){
   int Key;
   struct KBinding *P;
-  int (*Func)(void)=NULL;
+  void (*Func)(void);
 
-  while(Func==NULL){
+  do {
     Key=getch();
     for(P=KBindList;((Func=(P->Action))!=NULL)&&(Key!=(P->Key));P++);
-  }
+  } while(Func==NULL);
 
-  return (*Func)();
+  (*Func)();
 }
 
 
@@ -824,9 +824,14 @@ void PlayGame(void){
 
   StartCurses();
 
-  do
+  KeepPlaying = 1;
+
+  do {
     GetGlassState();
-  while (ShowScreen() && GetCmd());
+    if (ShowScreen() == 0)
+      break;
+    ExecuteCmd();
+  } while (KeepPlaying);
 
   StopCurses();
 }

@@ -662,47 +662,15 @@ void ExitWithoutSave(void){
   KeepPlaying = 0;
 }
 
-void MoveBufLeft(void){
-  ForEachIn(FigureNum,AddX,-2);
-}
+void Attempt(bfunc F, int V) {
+  if (!GameOver) {
+    struct Coord C;
 
-void MoveBufRight(void){
-  ForEachIn(FigureNum,AddX,2);
-}
-
-void MoveBufDown(void){
-  ForEachIn(FigureNum,AddY,-2);
-}
-
-void MoveBufUp(void){
-  ForEachIn(FigureNum,AddY,2);
-}
-
-void CompoundOp(bfunc F){
-  struct Coord C;
-
-  Normalize(FigureNum,&C);
-  ForEachIn(FigureNum,F,0);
-  ForEachIn(FigureNum,AddX,C.x);
-  ForEachIn(FigureNum,AddY,C.y);
-}
-
-void MirrorBufVert(void){
-  CompoundOp(NegX);
-}
-
-void RotateBufCW(void){
-  CompoundOp(RotCW);
-}
-
-void RotateBufCCW(void){
-  CompoundOp(RotCCW);
-}
-
-void Attempt(void (*F)(void)){
-  if(!GameOver){
-    CopyFigure(FigureNum,CurFigure);
-    (*F)();
+    CopyFigure(FigureNum, CurFigure);
+    Normalize(FigureNum, &C);
+    ForEachIn(FigureNum, F, V);
+    ForEachIn(FigureNum, AddX, C.x);
+    ForEachIn(FigureNum, AddY, C.y);
     if((ForEachIn(FigureNum,FitGlass,0)==0)&&
        ((!P.FlatFun) || (ForEachIn(FigureNum,AndGlass,0)==0))){
       CopyFigure(CurFigure,FigureNum);
@@ -713,33 +681,33 @@ void Attempt(void (*F)(void)){
 }
 
 void MoveCurLeft(void){
-  Attempt(MoveBufLeft);
+  Attempt(AddX, -2);
 }
 
 void MoveCurRight(void){
-  Attempt(MoveBufRight);
+  Attempt(AddX, 2);
 }
 
 void MoveCurDown(void){
   if (!P.Gravity)
-    Attempt(MoveBufDown);
+    Attempt(AddY, -2);
 }
 
 void MoveCurUp(void){
   if (!P.Gravity)
-    Attempt(MoveBufUp);
+    Attempt(AddY, 2);
 }
 
 void RotateCurCW(void){
-  Attempt(RotateBufCW);
+  Attempt(RotCW, 0);
 }
 
 void RotateCurCCW(void){
-  Attempt(RotateBufCCW);
+  Attempt(RotCCW, 0);
 }
 
 void MirrorCurVert(void){
-  Attempt(MirrorBufVert);
+  Attempt(NegX, 0);
 }
 
 void DropCur(void){

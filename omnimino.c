@@ -98,17 +98,16 @@ struct Parameters P;
 
 char ParentName[OM_STRLEN + 1];
 
-char PlayerName[OM_STRLEN + 1];
-unsigned int TimeStamp;
-
 unsigned int FigureNum;
 unsigned int CurFigure;
 
-unsigned int FillBuf[GLASS_SIZE];
 
-unsigned int BlockN[MAX_BLOCK_NUM+2];
+unsigned int *FillBuf;
+unsigned int * BlockN;
+struct Coord *Block;
 
-struct Coord Block[MAX_BLOCK_NUM];
+char PlayerName[OM_STRLEN + 1];
+unsigned int TimeStamp;
 
 /**************************************
 
@@ -127,7 +126,9 @@ unsigned int FigureSize;
 unsigned int TotalArea;
 unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
 
-unsigned int GlassRow[GLASS_SIZE];
+
+unsigned int *GlassRow;       /* used by SaveGame too */
+unsigned int GlassRowBufSize;
 
 unsigned int NextFigure; /* used to navigate through figures */
 unsigned int Untouched; /* lowest unmodified */
@@ -419,7 +420,7 @@ void DrawGlass(int GlassRowN) {
   GlassRowN -= (getmaxy(MyScr) - 1);
   for (RowN = getmaxy(MyScr) - 1; RowN >= 0; RowN--, GlassRowN++) {
     memset(RowImage, (GlassRowN >= (int)GlassHeight) ? ' ' : '#', MAX_ROW_LEN);
-    if (GlassRowN >= 0)
+    if ((GlassRowN >= 0) && (GlassRowN < (int)(GlassHeight + FigureSize +1)))
       PutRowImage(GlassRow[GlassRowN], RowImage+2, P.GlassWidth);
     mvwaddnstr(MyScr, RowN, 0, RowImage, (P.GlassWidth + 2) * 2);
   }
@@ -814,7 +815,6 @@ void PlayGame(void){
 #define stringize(s) stringyze(s)
 #define stringyze(s) #s
 
-#define BUFSIZE 0x20000
 
 char *StorePtr;
 
@@ -845,7 +845,6 @@ void StoreString(char *S) {
 #define PARNUM (sizeof(P) / sizeof(unsigned int))
 
 void SaveGame(void){
-  char Buf[BUFSIZE+1];
   unsigned int *UPtr = (unsigned int *) (&P);
   unsigned int i; 
   int Used;
@@ -854,8 +853,9 @@ void SaveGame(void){
   int fd;
 
 
-  StorePtr = Buf;
-  StoreFree = BUFSIZE;
+  StorePtr = (char *) GlassRow;
+  StoreFree = GlassRowBufSize;
+
 
   for (i = 0; i < PARNUM; i++, UPtr++)
     StoreUnsigned(*UPtr, '\n');
@@ -892,8 +892,8 @@ void SaveGame(void){
   TimeStamp = (unsigned int)time(NULL);
   StoreUnsigned(TimeStamp, '\n');
 
-  Used = BUFSIZE - StoreFree;
-  md5hash(Buf, Used, GameName);
+  Used = GlassRowBufSize - StoreFree;
+  md5hash(GlassRow, Used, GameName);
   strcat(GameName, ".mino");
 
   fd = open(GameName, O_CREAT | O_WRONLY, 0666);
@@ -901,7 +901,7 @@ void SaveGame(void){
     snprintf(MsgBuf, OM_STRLEN, "Can not open for write %s.", GameName);
     GameType = 3;
   } else {
-    if (write(fd, Buf, Used) != Used) {
+    if (write(fd, GlassRow, Used) != Used) {
       snprintf(MsgBuf, OM_STRLEN, "Error writing %s.", GameName);
       GameType = 3;
     }
@@ -1163,6 +1163,73 @@ int LoadData(void) {
 }
 
 
+void  *GameBuf = NULL;
+size_t GameBufSize = 0;
+
+
+int AllocateBuffers() {
+  unsigned int NewGameBufSize;
+
+  /* FillBuf, BlockN, Block, GlassRow = StoreBuf */
+
+  unsigned int FillBufSize = P.FillLevel * sizeof(int);
+  unsigned int MaxBlockN = TotalArea + 2 * MAX_FIGURE_SIZE;
+  unsigned int BlockBufSize  = MaxBlockN * sizeof(struct Coord);
+  unsigned int MaxFigure = MaxBlockN / P.WeightMin + 3;
+  unsigned int BlockNBufSize = MaxFigure * sizeof(struct Coord); 
+
+/*
+  Sizes of the parameters and data text representations
+
+  Parameters: 8*(1+1) + 4*(10+1) + (1+1) = 62
+  ParentName: OM_STRLEN+1 = 81
+  FigureNum:  10+1 = 11
+  CurFigure:  10+1 = 11
+  FillBuf:    FillLevel * (10+1) = FillLevel * 11
+  BlockN:     MaxFigure * (10+1) = MaxFigure * 11
+  Block:      MaxBlockN * (2+1,4+1) = MaxBlockN * 8
+  PlayerName: OM_STRLEN+1 = 81
+  TimeStamp:  10+1 = 11
+*/
+
+  unsigned int StoreBufSize = 62 + 81 + 11 + 11 +
+                              P.FillLevel * 11 +
+                              MaxFigure * 11 +
+                              MaxBlockN * 11 +
+                              81 + 11;
+
+  NewGameBufSize = FillBufSize + BlockNBufSize + BlockBufSize + StoreBufSize;
+
+  if (GameBuf == NULL) {
+    GameBufSize = NewGameBufSize;
+    GameBuf = malloc(GameBufSize);
+    if (GameBuf == NULL) {
+      snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %d byte buffer.", GameBufSize);
+      return 1;
+    }
+  } else {
+    if (NewGameBufSize > GameBufSize) {
+      GameBufSize = NewGameBufSize;
+      GameBuf = realloc(GameBuf, GameBufSize);
+      if (GameBuf == NULL) {
+        snprintf(MsgBuf, OM_STRLEN, "Failed to reallocate %d byte buffer.", GameBufSize);
+        return 1;
+      }
+    }
+  }
+
+  FillBuf = (unsigned int *) GameBuf;
+  BlockN = (unsigned int *) (FillBuf + P.FillLevel);
+  Block = (struct Coord *) (BlockN + MaxFigure);
+  GlassRow = (unsigned int *) (Block + MaxBlockN);
+
+  GlassRowBufSize = StoreBufSize;
+
+  return 0;
+}
+
+
+
 #include <sys/stat.h>
 #include <sys/mman.h>
 
@@ -1170,13 +1237,14 @@ int LoadData(void) {
 int DoLoad(char *BufAddr, size_t BufLen) {
   char BufName[OM_STRLEN + 1];
 
-  LoadPtr = BufAddr;
-
-  if ((LoadParameters() != 0) || (CheckParameters() != 0))
-    return 1;
-
   md5hash(BufAddr, BufLen, BufName);
   strcat(BufName, ".mino");
+
+  LoadPtr = BufAddr;
+
+  if ((LoadParameters() != 0) || (CheckParameters() != 0) || (AllocateBuffers() != 0))
+    return 1;
+
   if (strcmp(BufName, GameName) != 0) {
     GameType = 2;
     return 0;

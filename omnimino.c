@@ -1150,8 +1150,10 @@ int LoadData(void) {
     if (ReadInt((int *)&TimeStamp, 0) != 0) {
       Msg = "[21] TimeStamp read error.";
     } else {
+
       NextFigure=CurFigure;
       CurFigure=Untouched=NextFigure+1;
+      GameType = 1;
 
       return 0;
     }
@@ -1161,13 +1163,34 @@ int LoadData(void) {
 }
 
 
-int LoadGame(char *Name) {
-  int fd;
-  char Buf[BUFSIZE + 1];
-  int Used;
+#include <sys/stat.h>
+#include <sys/mman.h>
+
+
+int DoLoad(char *BufAddr, size_t BufLen) {
   char BufName[OM_STRLEN + 1];
+
+  LoadPtr = BufAddr;
+
+  if ((LoadParameters() != 0) || (CheckParameters() != 0))
+    return 1;
+
+  md5hash(BufAddr, BufLen, BufName);
+  strcat(BufName, ".mino");
+  if (strcmp(BufName, GameName) != 0) {
+    GameType = 2;
+    return 0;
+  }
+
+  return LoadData();
+}
+
+
+int LoadGame(char *Name) {
   unsigned int i;
   unsigned int *Par = (unsigned int *)(&P);
+
+  struct stat st;
 
   for (i = 0; i < PARNUM; i++)
     Par[i] = -1;
@@ -1179,44 +1202,29 @@ int LoadGame(char *Name) {
 
   GameType = 3;
 
-  fd = open(Name, O_RDONLY);
-  if (fd < 0) {
-    snprintf(MsgBuf, OM_STRLEN, "Can not open for read %s.", Name);
-    return 1;
+
+  if (stat(Name, &st) < 0) {
+    snprintf(MsgBuf, OM_STRLEN, "Can not stat file %s.", Name);
+  } else {
+    int fd = open(Name, O_RDONLY);
+    if (fd < 0) {
+      snprintf(MsgBuf, OM_STRLEN, "Can not open for read %s.", Name);
+    } else {
+      char *Buf = mmap(NULL, st.st_size + 1, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+      close(fd);
+      if (Buf == MAP_FAILED) {
+        Msg = "mmap failed.";
+      } else {
+        Buf[st.st_size] = '\0';
+        snprintf(GameName, OM_STRLEN, "%s", basename(Name));
+        int Err = DoLoad(Buf, st.st_size);
+        munmap(Buf, st.st_size + 1);
+        return Err;
+      }
+    }
   }
 
-  Used = read(fd, Buf, BUFSIZE);
-  close(fd);
-
-  Buf[BUFSIZE] = '\0';
-  if (Used < 0) {
-    snprintf(MsgBuf, OM_STRLEN, "Failed to read %s.", Name);
-    return 1;
-  }
-
-  snprintf(GameName, OM_STRLEN, "%s", basename(Name));
-
-  md5hash(Buf, Used, BufName);
-  strcat(BufName, ".mino");
-
-  LoadPtr = Buf;
-
-  if((LoadParameters() != 0) || (CheckParameters() != 0)){
-    return 1;
-  }
-
-  if (strcmp(BufName, GameName) != 0) {
-    GameType = 2;
-    return 0;
-  }
-
-  if (LoadData() != 0) {
-    return 1;
-  }
-
-  GameType = 1;
-
-  return 0;
+  return 1;
 }
 
 

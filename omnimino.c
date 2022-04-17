@@ -1204,7 +1204,7 @@ int AllocateBuffers() {
     GameBufSize = NewGameBufSize;
     GameBuf = malloc(GameBufSize);
     if (GameBuf == NULL) {
-      snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %d byte buffer.", GameBufSize);
+      snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %ld byte buffer.", (long)GameBufSize);
       return 1;
     }
   } else {
@@ -1212,7 +1212,7 @@ int AllocateBuffers() {
       GameBufSize = NewGameBufSize;
       GameBuf = realloc(GameBuf, GameBufSize);
       if (GameBuf == NULL) {
-        snprintf(MsgBuf, OM_STRLEN, "Failed to reallocate %d byte buffer.", GameBufSize);
+        snprintf(MsgBuf, OM_STRLEN, "Failed to reallocate %ld byte buffer.", (long)GameBufSize);
         return 1;
       }
     }

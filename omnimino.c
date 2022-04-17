@@ -124,6 +124,7 @@ char *Msg = MsgBuf;
 char GameName[OM_STRLEN + 1];
 
 unsigned int FigureSize;
+unsigned int TotalArea;
 unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
 
 unsigned int GlassRow[GLASS_SIZE];
@@ -348,15 +349,12 @@ int NewFigure(struct Coord *F) {
 
 **************************************/
 
-void NewGame(void) {
-  unsigned int TotalArea;
-
-
+void NewGame(void)
+{
   srand((unsigned int)time(NULL));
 
   FillGlass();
 
-  TotalArea = (P.GlassWidth * P.GlassHeightBuf) - (P.FillLevel * P.FillRatio);
   for (FigureNum = 0, BlockN[0] = 0; BlockN[FigureNum] < TotalArea; FigureNum++){
     BlockN[FigureNum+1] = BlockN[FigureNum] + NewFigure(Block + BlockN[FigureNum]);
     ForEachIn(FigureNum, ScaleUp, 0);
@@ -388,12 +386,16 @@ void StartCurses(void) {
   }
 }
 
+void DeleteMyScr(void) {
+  if (MyScr) {
+    delwin(MyScr);
+    MyScr = NULL;
+  }
+}
+
 void StopCurses() {
   if (Screen) {
-    if (MyScr) {
-      delwin(MyScr);
-      MyScr = NULL;
-    }
+    DeleteMyScr();
     endwin();
     delscreen(Screen);
     Screen = NULL;
@@ -718,11 +720,6 @@ void DropCur(void){
   }
 }
 
-void ScreenResize(void){
-  delwin(MyScr);
-  MyScr=NULL;
-}
-
 void UndoFigure(void){
   if(CurFigure>0)
     NextFigure=CurFigure-1;
@@ -766,7 +763,7 @@ struct KBinding {
   {'u', UndoFigure},
   {'r', RedoFigure},
 
-  {KEY_RESIZE, ScreenResize},
+  {KEY_RESIZE, DeleteMyScr},
 
   {0, NULL}
 };
@@ -960,6 +957,7 @@ int CheckParameters(void){
       unsigned int i,Area = FigureSize;
 
       FullRow=((1<<(P.GlassWidth-1))<<1)-1;
+      TotalArea = (P.GlassWidth * P.GlassHeightBuf) - (P.FillLevel * P.FillRatio);
 
       if (P.Aperture != 0){
         Area=P.Aperture * P.Aperture;
@@ -1066,7 +1064,6 @@ int ReadGlassFill(void) {
 
 int ReadFigures(void) {
   unsigned int i, FW;
-  unsigned int TotalArea = (P.GlassWidth * P.GlassHeightBuf) - (P.FillLevel * P.FillRatio);
 
   for (i = 0; i <= FigureNum; i++) {
     if(ReadInt((int *)(BlockN+i), ';') != 0){
@@ -1173,7 +1170,7 @@ int LoadGame(char *Name) {
   unsigned int *Par = (unsigned int *)(&P);
 
   for (i = 0; i < PARNUM; i++)
-    Par[i] = UINT_MAX;
+    Par[i] = -1;
 
   MsgBuf[0] = '\0';
   Msg = MsgBuf;

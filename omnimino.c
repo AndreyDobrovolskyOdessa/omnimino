@@ -482,27 +482,17 @@ void DrawQueue(void) {
 }
 
 
-#define STATUS_MARK_POS 0
-#define STATUS_MARK_LEN 1
-
-#define STATUS_SCORE_POS 1
-#define STATUS_SCORE_LEN 4
-
-#define STATUS_LEN (STATUS_MARK_LEN+STATUS_SCORE_LEN)
-
 
 void DrawStatus(void) {
-  char StatusMark[STATUS_MARK_LEN + 1];
-  char StatusScore[STATUS_SCORE_LEN + 1];
-  int CurScore = (P.Goal == FILL_GOAL) ? Unfilled() : CurFigure;
+  char StatusMark[2];
+  int MsgLen = strlen(MsgBuf);
   int StatusY = getmaxy(MyScr) - 1;
-  int StatusX = getmaxx(MyScr) - STATUS_LEN;
+  int StatusX = getmaxx(MyScr) - MsgLen;
 
   StatusMark[0] = GoalReached ? '+' : (GameOver ? '-' : ' ');
-  snprintf(StatusScore, STATUS_SCORE_LEN+1, "%-*d", STATUS_SCORE_LEN, CurScore);
 
-  mvwaddnstr(MyScr, StatusY, StatusX + STATUS_MARK_POS, StatusMark, STATUS_MARK_LEN);
-  mvwaddnstr(MyScr, StatusY, StatusX + STATUS_SCORE_POS, StatusScore, STATUS_SCORE_LEN);
+  mvwaddnstr(MyScr, StatusY, StatusX  - 1, StatusMark, 1);
+  mvwaddnstr(MyScr, StatusY, StatusX , MsgBuf, MsgLen);
 }
 
 int ShowScreen(void) {
@@ -646,6 +636,8 @@ void GetGlassState(void) {
       Deploy(CurFigure);
     Untouched = CurFigure + 1;
   }
+
+  snprintf(MsgBuf, OM_STRLEN, "%d", (P.Goal == FILL_GOAL) ? Unfilled() : CurFigure);
 }
 
 /**************************************
@@ -1329,15 +1321,11 @@ void ExportGame(void){
   fprintf(stdout,"},\n");
 }
 
-unsigned int GetScore(void) {
-  if (GameType == 1)
-    return (P.Goal == FILL_GOAL) ? Unfilled() : (GoalReached ? CurFigure : FigureNum);
-  return 0;
-}
 
-void Report(unsigned int Score) {
+void Report() {
   if (GameType == 1) {
-    snprintf(MsgBuf, OM_STRLEN,  "%d", Score);
+    if ((P.Goal != FILL_GOAL) && (!GoalReached))
+      snprintf(MsgBuf, OM_STRLEN,  "%d", FigureNum);
   }
 
   if (isatty(fileno(stdout))) {
@@ -1355,17 +1343,15 @@ Usage: omnimino infile\n\
 int main(int argc,char *argv[]){
   int argi;
   char FName[OM_STRLEN + 1];
-  unsigned int Score = 0;
 
   if (argc > 1) {
     for (argi = 1; argi < argc; argi++){
       if (LoadGame(argv[argi]) == 0) {
         PlayGame();
-        Score = GetScore();
         if (GameModified)
           SaveGame();
       }
-      Report(Score);
+      Report();
     }
   } else {
     if (isatty(fileno(stdin))) {
@@ -1380,7 +1366,7 @@ int main(int argc,char *argv[]){
             if (GameType == 1)
               GetGlassState();
           }
-          Report(GetScore());
+          Report();
         }
       }
     }

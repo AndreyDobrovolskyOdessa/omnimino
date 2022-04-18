@@ -1330,7 +1330,9 @@ void ExportGame(void){
 }
 
 unsigned int GetScore(void) {
+  if (GameType == 1)
     return (P.Goal == FILL_GOAL) ? Unfilled() : (GoalReached ? CurFigure : FigureNum);
+  return 0;
 }
 
 void Report(unsigned int Score) {

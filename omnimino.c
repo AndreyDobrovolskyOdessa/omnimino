@@ -1325,6 +1325,8 @@ void Report() {
   if (GameType == 1) {
     if ((P.Goal != FILL_GOAL) && (!GoalReached))
       snprintf(MsgBuf, OM_STRLEN,  "%d", FigureNum);
+  } else if (GameType == 2) {
+    MsgBuf[0] = '\0';
   }
 
   if (isatty(fileno(stdout))) {

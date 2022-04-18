@@ -288,6 +288,7 @@ void FillGlass(void){
   unsigned int i, Places, Blocks;
 
   for (i = 0 ; i < P.FillLevel ; i++) {
+    FillBuf[i] = 0;
     for (Places = P.GlassWidth, Blocks = P.FillRatio ; Places > 0 ; Places--) {
       FillBuf[i] <<= 1;
       if ((rand() % Places) < Blocks) {

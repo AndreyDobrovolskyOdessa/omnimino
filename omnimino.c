@@ -1329,10 +1329,12 @@ void ExportGame(void){
   fprintf(stdout,"},\n");
 }
 
+unsigned int GetScore(void) {
+    return (P.Goal == FILL_GOAL) ? Unfilled() : (GoalReached ? CurFigure : FigureNum);
+}
 
-void Report(void) {
+void Report(unsigned int Score) {
   if (GameType == 1) {
-    unsigned int Score = (P.Goal == FILL_GOAL) ? Unfilled() : (GoalReached ? CurFigure : FigureNum);
     snprintf(MsgBuf, OM_STRLEN,  "%d", Score);
   }
 
@@ -1351,15 +1353,17 @@ Usage: omnimino infile\n\
 int main(int argc,char *argv[]){
   int argi;
   char FName[OM_STRLEN + 1];
+  unsigned int Score = 0;
 
   if (argc > 1) {
     for (argi = 1; argi < argc; argi++){
       if (LoadGame(argv[argi]) == 0) {
         PlayGame();
+        Score = GetScore();
         if (GameModified)
           SaveGame();
       }
-      Report();
+      Report(Score);
     }
   } else {
     if (isatty(fileno(stdin))) {
@@ -1374,7 +1378,7 @@ int main(int argc,char *argv[]){
             if (GameType == 1)
               GetGlassState();
           }
-          Report();
+          Report(GetScore());
         }
       }
     }

@@ -484,14 +484,13 @@ void DrawQueue(void) {
 
 
 void DrawStatus(void) {
-  char StatusMark[2];
   int MsgLen = strlen(MsgBuf);
   int StatusY = getmaxy(MyScr) - 1;
   int StatusX = getmaxx(MyScr) - MsgLen;
 
-  StatusMark[0] = GoalReached ? '+' : (GameOver ? '-' : ' ');
+  if (GameOver)
+    mvwaddnstr(MyScr, StatusY, StatusX  - 1, GoalReached ? "+" : "-", 1);
 
-  mvwaddnstr(MyScr, StatusY, StatusX  - 1, StatusMark, 1);
   mvwaddnstr(MyScr, StatusY, StatusX , MsgBuf, MsgLen);
 }
 
@@ -1355,9 +1354,8 @@ int main(int argc,char *argv[]){
     }
   } else {
     if (isatty(fileno(stdin))) {
-      Msg = USAGE;
       if (isatty(fileno(stdout))) {
-        fprintf(stdout, "%s\n", Msg);
+        fprintf(stdout, USAGE);
       }
     } else {
       while (!feof(stdin)) {

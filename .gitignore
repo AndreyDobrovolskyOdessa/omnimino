@@ -1,3 +1,5 @@
 omnimino
 *.mino
+*.o
 .dep*
+

@@ -69,7 +69,9 @@ struct Coord {
   int x, y;
 };
 
-struct Parameters {
+typedef void (*bfunc) (struct Coord *, int *);
+
+struct OmniParms {
   unsigned int Aperture;
   unsigned int Metric; /* 0 - abs(x1-x0)+abs(y1-y0), 1 - max(abs(x1-x0),abs(y1-y0)) */
   unsigned int WeightMax;
@@ -85,78 +87,100 @@ struct Parameters {
   unsigned int SlotsUnique;
 };
 
-typedef void (*bfunc) (struct Coord *, int *);
+#define PARNUM (sizeof(struct OmniParms) / sizeof(unsigned int))
 
+struct OmniData {
+  unsigned int FigureNum;
+  unsigned int CurFigure;
+  unsigned int TimeStamp;
+  unsigned int GameType;
+  unsigned int FigureSize;
+  unsigned int TotalArea;
+  unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
+  unsigned int NextFigure; /* used to navigate through figures */
+  unsigned int Untouched; /* lowest unmodified */
+  unsigned int GlassHeight; /* can change during game if FullRowClear */
+  unsigned int GlassLevel; /* lowest free line */
+  int GameOver;
+  int GoalReached;
+  int GameModified;
+  size_t GameBufSize;
+  unsigned int *FillBuf;
+  unsigned int * BlockN;
+  struct Coord *Block;
+  unsigned int *GlassRow;       /* used by SaveGame too */
+  size_t StoreBufSize;
+};
 
-/**************************************
+struct OmniStrings {
+  char *Msg;
+  char MsgBuf[OM_STRLEN + 1];
+  char GameName[OM_STRLEN + 1];
+  char ParentName[OM_STRLEN + 1];
+  char PlayerName[OM_STRLEN + 1];
+};
 
-           Game parameters
-
-**************************************/
-
-struct Parameters P;
-
-
-/**************************************
-
-           Game data
-
-**************************************/
-
-char ParentName[OM_STRLEN + 1];
-
-unsigned int FigureNum;
-unsigned int CurFigure;
-
-
-char PlayerName[OM_STRLEN + 1];
-unsigned int TimeStamp;
-
-
-/**************************************
-
-           Game variables
-
-**************************************/
-
-unsigned int GameType;
-
-char MsgBuf[OM_STRLEN + 1];
-char *Msg;
-
-char GameName[OM_STRLEN + 1];
-
-unsigned int FigureSize;
-unsigned int TotalArea;
-unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
-
-
-unsigned int NextFigure; /* used to navigate through figures */
-unsigned int Untouched; /* lowest unmodified */
-
-unsigned int GlassHeight; /* can change during game if FullRowClear */
-unsigned int GlassLevel; /* lowest free line */
-
-int GameOver;
-int GoalReached;
-int GameModified;
-
+struct Omnimino {
+  struct OmniParms P;
+  struct OmniData D;
+  struct OmniStrings S;
+};
 
 /**************************************
 
-           Allocated buffers
+           Game
 
 **************************************/
 
-size_t GameBufSize = 0;
+struct Omnimino G;
 
-unsigned int *FillBuf = NULL;
-unsigned int * BlockN;
-struct Coord *Block;
-unsigned int *GlassRow;       /* used by SaveGame too */
 
-size_t StoreBufSize;
+#define Aperture (G.P.Aperture)
+#define Metric   (G.P.Metric)
+#define WeightMax (G.P.WeightMax)
+#define WeightMin (G.P.WeightMin)
+#define Gravity (G.P.Gravity)
+#define FlatFun (G.P.FlatFun)
+#define FullRowClear (G.P.FullRowClear)
+#define Goal (G.P.Goal)
+#define GlassWidth (G.P.GlassWidth)
+#define GlassHeightBuf (G.P.GlassHeightBuf)
+#define FillLevel (G.P.FillLevel)
+#define FillRatio (G.P.FillRatio)
+#define SlotsUnique (G.P.SlotsUnique)
 
+#define FigureNum (G.D.FigureNum)
+#define CurFigure (G.D.CurFigure)
+#define TimeStamp (G.D.TimeStamp)
+#define GameType (G.D.GameType)
+#define FigureSize (G.D.FigureSize)
+#define TotalArea (G.D.TotalArea)
+#define FullRow (G.D.FullRow)
+#define NextFigure (G.D.NextFigure)
+#define Untouched (G.D.Untouched)
+#define GlassHeight (G.D.GlassHeight)
+#define GlassLevel (G.D.GlassLevel)
+#define GameOver (G.D.GameOver)
+#define GoalReached (G.D.GoalReached)
+#define GameModified (G.D.GameModified)
+#define GameBufSize (G.D.GameBufSize)
+#define FillBuf (G.D.FillBuf)
+#define BlockN (G.D.BlockN)
+#define Block (G.D.Block)
+#define GlassRow (G.D.GlassRow)
+#define StoreBufSize (G.D.StoreBufSize)
+
+#define GameName (G.S.GameName)
+#define ParentName (G.S.ParentName)
+#define PlayerName (G.S.PlayerName)
+#define MsgBuf (G.S.MsgBuf)
+#define Msg (G.S.Msg)
+
+
+void InitGame(void) {
+  FillBuf = NULL;
+  GameBufSize = 0;
+}
 
 /**************************************
 
@@ -215,7 +239,7 @@ void RotCCW(struct Coord *B,int *V){
 }
 
 void FitWidth(struct Coord *B, int *Err){
-  (*Err) |= ( (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)P.GlassWidth) );
+  (*Err) |= ( (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth) );
 }
 
 void FitHeight(struct Coord *B, int *Err){
@@ -288,13 +312,6 @@ unsigned int Unfilled(void){
 }
 
 
-void DetectGlassLevel(void) {
-  GlassLevel = GlassHeight + FigureSize + 1;
-  while ((GlassLevel > 0) && (GlassRow[GlassLevel - 1] == 0))
-    GlassLevel--;
-}
-
-
 /**************************************
 
            New game functions
@@ -304,9 +321,9 @@ void DetectGlassLevel(void) {
 void FillGlass(void){
   unsigned int i, Places, Blocks;
 
-  for (i = 0 ; i < P.FillLevel ; i++) {
+  for (i = 0 ; i < FillLevel ; i++) {
     FillBuf[i] = 0;
-    for (Places = P.GlassWidth, Blocks = P.FillRatio ; Places > 0 ; Places--) {
+    for (Places = GlassWidth, Blocks = FillRatio ; Places > 0 ; Places--) {
       FillBuf[i] <<= 1;
       if ((rand() % Places) < Blocks) {
         FillBuf[i] |= 1; Blocks--;
@@ -324,16 +341,16 @@ int FindBlock(struct Coord *B,struct Coord *A,int Len){
 int SelectSlots(struct Coord *Slot,struct Coord *FBlock,int Weight){
   int SlotNum = 0, ApertureSize, HalfSize, SeedCnt, x, y, Delta;
 
-  ApertureSize = (P.Aperture == 0) ? (Weight ? 3 : 1) : P.Aperture;
+  ApertureSize = (Aperture == 0) ? (Weight ? 3 : 1) : Aperture;
   HalfSize = ApertureSize / 2;
-  for(SeedCnt = 0; SeedCnt < (((P.Aperture == 0) && Weight) ? Weight : 1); SeedCnt++){
+  for(SeedCnt = 0; SeedCnt < (((Aperture == 0) && Weight) ? Weight : 1); SeedCnt++){
     for(x = -HalfSize; x < (ApertureSize - HalfSize); x++){
-      Delta = P.Metric ? 0 : abs(x);
+      Delta = Metric ? 0 : abs(x);
       for(y = -HalfSize+Delta; y < (ApertureSize - HalfSize - Delta); y++){
-        Slot[SlotNum].x = x + (((P.Aperture == 0) && Weight) ? FBlock[SeedCnt].x : 0);
-        Slot[SlotNum].y = y + (((P.Aperture == 0) && Weight) ? FBlock[SeedCnt].y : 0);
-        if (((Weight >= (int)P.WeightMin) || (!FindBlock(Slot + SlotNum, FBlock, Weight))) &&
-           ((!P.SlotsUnique) || (!FindBlock(Slot + SlotNum, Slot, SlotNum))))
+        Slot[SlotNum].x = x + (((Aperture == 0) && Weight) ? FBlock[SeedCnt].x : 0);
+        Slot[SlotNum].y = y + (((Aperture == 0) && Weight) ? FBlock[SeedCnt].y : 0);
+        if (((Weight >= (int)WeightMin) || (!FindBlock(Slot + SlotNum, FBlock, Weight))) &&
+           ((!SlotsUnique) || (!FindBlock(Slot + SlotNum, Slot, SlotNum))))
           SlotNum++;
       }
     }
@@ -353,7 +370,7 @@ int NewFigure(struct Coord *F) {
   unsigned int i;
   struct Coord Slot[MAX_SLOTS], *B;
   
-  for (i = 0, B = F; i < P.WeightMax; i++){
+  for (i = 0, B = F; i < WeightMax; i++){
     memcpy(B, Slot + (rand() % SelectSlots(Slot, F, B-F)),sizeof(struct Coord));
     if (!FindBlock(B, F, B-F))
       B++;
@@ -439,8 +456,8 @@ void DrawGlass(int GlassRowN) {
   for (RowN = getmaxy(MyScr) - 1; RowN >= 0; RowN--, GlassRowN++) {
     memset(RowImage, (GlassRowN >= (int)GlassHeight) ? ' ' : '#', MAX_ROW_LEN);
     if ((GlassRowN >= 0) && (GlassRowN < (int)(GlassHeight + FigureSize +1)))
-      PutRowImage(GlassRow[GlassRowN], RowImage+2, P.GlassWidth);
-    mvwaddnstr(MyScr, RowN, 0, RowImage, (P.GlassWidth + 2) * 2);
+      PutRowImage(GlassRow[GlassRowN], RowImage+2, GlassWidth);
+    mvwaddnstr(MyScr, RowN, 0, RowImage, (GlassWidth + 2) * 2);
   }
 }
 
@@ -476,7 +493,7 @@ void DrawQueue(void) {
 
   int SideLen = FigureSize + 2;
   int TwiSide = SideLen * 2;
-  int LeftMargin = (P.GlassWidth + 2) * 2;
+  int LeftMargin = (GlassWidth + 2) * 2;
   int PlacesH = (getmaxx(MyScr) - LeftMargin) / TwiSide;
   int PlacesV = getmaxy(MyScr) / SideLen;
 
@@ -522,7 +539,7 @@ int ShowScreen(void) {
 
     werase(MyScr);
 
-    if (((unsigned int)getmaxx(MyScr) < ((P.GlassWidth + 2) * 2)) || ((unsigned int)getmaxy(MyScr) < (MAX_FIGURE_SIZE * 2))){
+    if (((unsigned int)getmaxx(MyScr) < ((GlassWidth + 2) * 2)) || ((unsigned int)getmaxy(MyScr) < (MAX_FIGURE_SIZE * 2))){
       mvwaddstr(MyScr, 0, 0, "Screen too small");
     } else {
       int GlassRowN = SelectGlassRow();
@@ -546,10 +563,18 @@ int ShowScreen(void) {
 
 **************************************/
 
+
+void DetectGlassLevel(void) {
+  GlassLevel = GlassHeight + FigureSize + 1;
+  while ((GlassLevel > 0) && (GlassRow[GlassLevel - 1] == 0))
+    GlassLevel--;
+}
+
+
 void Drop(int FigN){
   CopyFigure(FigureNum,FigN);
-  if(P.Gravity){
-    if(!P.FlatFun){
+  if(Gravity){
+    if(!FlatFun){
       ForEachIn(FigureNum,AddY,-(ForEachIn(FigureNum,FindBottom,INT_MAX)&(~1)));
       while((ForEachIn(FigureNum,FitGlass,0)==0)&&(ForEachIn(FigureNum,AndGlass,0)!=0))
         ForEachIn(FigureNum,AddY,2);
@@ -562,6 +587,7 @@ void Drop(int FigN){
   ForEachIn(FigureNum,PlaceIntoGlass,0);
   DetectGlassLevel();
 }
+
 
 void ClearFullRows(void) {
   unsigned int r, w, FullRowNum, GlassSize;
@@ -585,17 +611,19 @@ void ClearFullRows(void) {
   GlassLevel -= FullRowNum;
 }
 
+
 void Deploy(int FN) {
   struct Coord C;
 
   Normalize(FN, &C);
-  ForEachIn(FN, AddX, P.GlassWidth); /* impliciltly divided by 2 */
+  ForEachIn(FN, AddX, GlassWidth); /* impliciltly divided by 2 */
   ForEachIn(FN, AddY, ((GlassLevel + 1) << 1) + FigureSize);
   GameModified = 1;
 }
 
+
 void CheckGame(void) {
-  switch(P.Goal){
+  switch(Goal){
     case TOUCH_GOAL:
       if ((ForEachIn(FigureNum, FindBottom, INT_MAX) >> 1) == 0)
         GoalReached = 1;
@@ -613,23 +641,25 @@ void CheckGame(void) {
     GameOver = 1;
 }
 
+
 void RewindGlassState(void) {
   unsigned int i, GlassSize;
 
-  for (i=0; i < P.FillLevel; i++)
+  for (i=0; i < FillLevel; i++)
     GlassRow[i] = FillBuf[i];
 
-  GlassHeight=P.GlassHeightBuf;
+  GlassHeight=GlassHeightBuf;
   GlassSize = GlassHeight + FigureSize + 1;
 
   for (; i < GlassSize; i++)
     GlassRow[i] = 0;
 
-  GlassLevel = P.FillLevel;
+  GlassLevel = FillLevel;
   CurFigure = 0;
   GameOver = 0;
   GoalReached = 0;
 }
+
 
 void GetGlassState(void) {
   if (NextFigure < CurFigure)
@@ -641,7 +671,7 @@ void GetGlassState(void) {
       break;
     }
     Drop(CurFigure++);
-    if (P.FullRowClear)
+    if (FullRowClear)
       ClearFullRows();
     CheckGame();
     if (GameOver)
@@ -654,7 +684,7 @@ void GetGlassState(void) {
     Untouched = CurFigure + 1;
   }
 
-  snprintf(MsgBuf, OM_STRLEN, "%d", (P.Goal == FILL_GOAL) ? Unfilled() : CurFigure);
+  snprintf(MsgBuf, OM_STRLEN, "%d", (Goal == FILL_GOAL) ? Unfilled() : CurFigure);
 }
 
 /**************************************
@@ -684,7 +714,7 @@ void Attempt(bfunc F, int V) {
     ForEachIn(FigureNum, AddX, C.x);
     ForEachIn(FigureNum, AddY, C.y);
     if((ForEachIn(FigureNum,FitGlass,0)==0)&&
-       ((!P.FlatFun) || (ForEachIn(FigureNum,AndGlass,0)==0))){
+       ((!FlatFun) || (ForEachIn(FigureNum,AndGlass,0)==0))){
       CopyFigure(CurFigure,FigureNum);
       Untouched=CurFigure+1;
       GameModified=1;
@@ -701,12 +731,12 @@ void MoveCurRight(void){
 }
 
 void MoveCurDown(void){
-  if (!P.Gravity)
+  if (!Gravity)
     Attempt(AddY, -2);
 }
 
 void MoveCurUp(void){
-  if (!P.Gravity)
+  if (!Gravity)
     Attempt(AddY, 2);
 }
 
@@ -851,10 +881,9 @@ void StoreString(char *S) {
   Adjust(snprintf(StorePtr, StoreFree, "%s\n", S));
 }
 
-#define PARNUM (sizeof(P) / sizeof(unsigned int))
 
 void SaveGame(void){
-  unsigned int *UPtr = (unsigned int *) (&P);
+  unsigned int *UPtr = (unsigned int *) (&G.P);
   unsigned int i; 
   int Used;
   char *UserName;
@@ -878,7 +907,7 @@ void SaveGame(void){
   StoreUnsigned(FigureNum, '\n');
   StoreUnsigned(CurFigure, '\n');
 
-  for (i = 0; i < P.FillLevel; i++)
+  for (i = 0; i < FillLevel; i++)
     StoreUnsigned(FillBuf[i], ';');
   StoreString("");
 
@@ -927,59 +956,59 @@ void SaveGame(void){
 
 
 int CheckParameters(void){
-  if (P.Aperture > MAX_FIGURE_SIZE){
-    snprintf(MsgBuf, OM_STRLEN, "[1] Aperture (%d) > MAX_FIGURE_SIZE (%d)", P.Aperture, MAX_FIGURE_SIZE);
-  } else if (P.Metric > 1){
-    snprintf(MsgBuf, OM_STRLEN, "[2] Metric (%d) can be 0 or 1", P.Metric);
-  } else if (P.WeightMax > MAX_FIGURE_SIZE){
-    snprintf(MsgBuf, OM_STRLEN, "[3] WeightMax (%d) > MAX_FIGURE_SIZE (%d)", P.WeightMax, MAX_FIGURE_SIZE);
-  } else if (P.WeightMin < 1){
-    snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) < 1", P.WeightMin);
-  } else if (P.WeightMin > P.WeightMax){
-    snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) > [3] WeightMax (%d)", P.WeightMin, P.WeightMax);
-  } else if (P.Gravity > 1){
-    snprintf(MsgBuf, OM_STRLEN, "[5] Gravity (%d) can be 0 or 1", P.Gravity);
-  } else if (P.FlatFun > 1){
-    snprintf(MsgBuf, OM_STRLEN, "[6] FlatFun (%d) can be 0 or 1", P.FlatFun);
-  } else if (P.FullRowClear > 1){
-    snprintf(MsgBuf, OM_STRLEN, "[7] FullRowClear (%d) can be 0 or 1", P.FullRowClear);
-  } else if (P.Goal >= MAX_GOAL){
-    snprintf(MsgBuf, OM_STRLEN, "[8] Goal (%d) > 2", P.Goal);
+  if (Aperture > MAX_FIGURE_SIZE){
+    snprintf(MsgBuf, OM_STRLEN, "[1] Aperture (%d) > MAX_FIGURE_SIZE (%d)", Aperture, MAX_FIGURE_SIZE);
+  } else if (Metric > 1){
+    snprintf(MsgBuf, OM_STRLEN, "[2] Metric (%d) can be 0 or 1", Metric);
+  } else if (WeightMax > MAX_FIGURE_SIZE){
+    snprintf(MsgBuf, OM_STRLEN, "[3] WeightMax (%d) > MAX_FIGURE_SIZE (%d)", WeightMax, MAX_FIGURE_SIZE);
+  } else if (WeightMin < 1){
+    snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) < 1", WeightMin);
+  } else if (WeightMin > WeightMax){
+    snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) > [3] WeightMax (%d)", WeightMin, WeightMax);
+  } else if (Gravity > 1){
+    snprintf(MsgBuf, OM_STRLEN, "[5] Gravity (%d) can be 0 or 1", Gravity);
+  } else if (FlatFun > 1){
+    snprintf(MsgBuf, OM_STRLEN, "[6] FlatFun (%d) can be 0 or 1", FlatFun);
+  } else if (FullRowClear > 1){
+    snprintf(MsgBuf, OM_STRLEN, "[7] FullRowClear (%d) can be 0 or 1", FullRowClear);
+  } else if (Goal >= MAX_GOAL){
+    snprintf(MsgBuf, OM_STRLEN, "[8] Goal (%d) > 2", Goal);
   } else {
-    FigureSize = (P.Aperture == 0) ? P.WeightMax : P.Aperture;
+    FigureSize = (Aperture == 0) ? WeightMax : Aperture;
 
-    if (P.GlassWidth < FigureSize){
-      snprintf(MsgBuf, OM_STRLEN, "[9] GlassWidth (%d) < FigureSize (%d)", P.GlassWidth, FigureSize);
-    } else if (P.GlassWidth > MAX_GLASS_WIDTH){
-      snprintf(MsgBuf, OM_STRLEN, "[9] GlassWidth (%d) > MAX_GLASS_WIDTH (%d)", P.GlassWidth, MAX_GLASS_WIDTH);
-    } else if (P.GlassHeightBuf < FigureSize){
-      snprintf(MsgBuf, OM_STRLEN, "[10] GlassHeight (%d) < FigureSize (%d)", P.GlassHeightBuf, FigureSize);
-    } else if (P.GlassHeightBuf > MAX_GLASS_HEIGHT){
-      snprintf(MsgBuf, OM_STRLEN, "[10] GlassHeight (%d) > MAX_GLASS_HEIGHT (%d)", P.GlassHeightBuf, MAX_GLASS_HEIGHT);
-    } else if (P.FillLevel > P.GlassHeightBuf){
-      snprintf(MsgBuf, OM_STRLEN, "[11] FillLevel (%d) > [10] GlassHeight (%d)", P.FillLevel, P.GlassHeightBuf);
-    } else if (P.FillRatio >= P.GlassWidth){
-      snprintf(MsgBuf, OM_STRLEN, "[12] FillRatio (%d) >= [9] GlassWidth (%d)", P.FillRatio, P.GlassWidth);
-    } else if (P.SlotsUnique > 1){
-      snprintf(MsgBuf, OM_STRLEN, "[13] SlotsUnique (%d) can be 0 or 1", P.SlotsUnique);
+    if (GlassWidth < FigureSize){
+      snprintf(MsgBuf, OM_STRLEN, "[9] GlassWidth (%d) < FigureSize (%d)", GlassWidth, FigureSize);
+    } else if (GlassWidth > MAX_GLASS_WIDTH){
+      snprintf(MsgBuf, OM_STRLEN, "[9] GlassWidth (%d) > MAX_GLASS_WIDTH (%d)", GlassWidth, MAX_GLASS_WIDTH);
+    } else if (GlassHeightBuf < FigureSize){
+      snprintf(MsgBuf, OM_STRLEN, "[10] GlassHeight (%d) < FigureSize (%d)", GlassHeightBuf, FigureSize);
+    } else if (GlassHeightBuf > MAX_GLASS_HEIGHT){
+      snprintf(MsgBuf, OM_STRLEN, "[10] GlassHeight (%d) > MAX_GLASS_HEIGHT (%d)", GlassHeightBuf, MAX_GLASS_HEIGHT);
+    } else if (FillLevel > GlassHeightBuf){
+      snprintf(MsgBuf, OM_STRLEN, "[11] FillLevel (%d) > [10] GlassHeight (%d)", FillLevel, GlassHeightBuf);
+    } else if (FillRatio >= GlassWidth){
+      snprintf(MsgBuf, OM_STRLEN, "[12] FillRatio (%d) >= [9] GlassWidth (%d)", FillRatio, GlassWidth);
+    } else if (SlotsUnique > 1){
+      snprintf(MsgBuf, OM_STRLEN, "[13] SlotsUnique (%d) can be 0 or 1", SlotsUnique);
     } else {
       unsigned int i,Area = FigureSize;
 
-      FullRow=((1<<(P.GlassWidth-1))<<1)-1;
-      TotalArea = (P.GlassWidth * P.GlassHeightBuf) - (P.FillLevel * P.FillRatio);
+      FullRow=((1<<(GlassWidth-1))<<1)-1;
+      TotalArea = (GlassWidth * GlassHeightBuf) - (FillLevel * FillRatio);
 
-      if (P.Aperture != 0){
-        Area=P.Aperture * P.Aperture;
-        if(P.Metric == 0){
-          if ((P.Aperture % 2) == 0)
-            Area -= P.Aperture;
-          for (i = 1; i < ((P.Aperture - 1) / 2); i++)
+      if (Aperture != 0){
+        Area=Aperture * Aperture;
+        if(Metric == 0){
+          if ((Aperture % 2) == 0)
+            Area -= Aperture;
+          for (i = 1; i < ((Aperture - 1) / 2); i++)
             Area -= 4*i;
         }
       }
 
-      if (Area < P.WeightMin){
-        snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) > Aperture Area (%d)", P.WeightMin, Area);
+      if (Area < WeightMin){
+        snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) > Aperture Area (%d)", WeightMin, Area);
       } else {
         return 0;
       }
@@ -1031,7 +1060,7 @@ void ReadString(char *S) {
 
 int LoadParameters(void) {
   unsigned int i;
-  unsigned int *Par = (unsigned int *) (&P);
+  unsigned int *Par = (unsigned int *) (&G.P);
 
   for (i = 0; i < PARNUM; i++, Par++){
     if(ReadInt((int *)Par, 0) != 0) {
@@ -1052,13 +1081,13 @@ int WrongUnits(unsigned int R){
   for (n = 0; R; R >>= 1)
     n += R & 1;
 
-  return n != P.FillRatio;
+  return n != FillRatio;
 }
 
 int ReadGlassFill(void) {
   unsigned int i;
 
-  for (i = 0; i < P.FillLevel; i++) {
+  for (i = 0; i < FillLevel; i++) {
     if (ReadInt((int *)(FillBuf + i), ';') != 0) {
       Msg = "[17] GlassRow load error."; return 1;
     }
@@ -1084,11 +1113,11 @@ int ReadFigures(void) {
       }
     } else {
       FW = BlockN[i] - BlockN[i-1];
-      if (FW < P.WeightMin) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", i - 1, FW, P.WeightMin); return 1;
+      if (FW < WeightMin) {
+        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", i - 1, FW, WeightMin); return 1;
       }
-      if (FW > P.WeightMax) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", i - 1, FW, P.WeightMax); return 1;
+      if (FW > WeightMax) {
+        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", i - 1, FW, WeightMax); return 1;
       }
       if (BlockN[i - 1] >= TotalArea) {
         snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", i - 1); return 1;
@@ -1176,10 +1205,10 @@ int AllocateBuffers() {
 
   /* FillBuf, BlockN, Block, GlassRow = StoreBuf */
 
-  unsigned int MaxFigure = TotalArea / P.WeightMin + 3;
+  unsigned int MaxFigure = TotalArea / WeightMin + 3;
   unsigned int MaxBlock = TotalArea + 2 * MAX_FIGURE_SIZE;
 
-  size_t FillBufSize = P.FillLevel * sizeof(int);
+  size_t FillBufSize = FillLevel * sizeof(int);
   size_t BlockNBufSize = MaxFigure * sizeof(int); 
   size_t BlockBufSize  = MaxBlock * sizeof(struct Coord);
 
@@ -1197,7 +1226,7 @@ int AllocateBuffers() {
   TimeStamp:  10+1 = 11
 */
 
-  StoreBufSize = 62 + 81 + 11 + 11 + P.FillLevel * 11 +
+  StoreBufSize = 62 + 81 + 11 + 11 + FillLevel * 11 +
                  MaxFigure * 11 + MaxBlock * 11 + 81 + 11;
 
   size_t NewGameBufSize = FillBufSize + BlockNBufSize + BlockBufSize + StoreBufSize;
@@ -1220,7 +1249,7 @@ int AllocateBuffers() {
     }
   }
 
-  BlockN = (unsigned int *) (FillBuf + P.FillLevel);
+  BlockN = (unsigned int *) (FillBuf + FillLevel);
   Block = (struct Coord *) (BlockN + MaxFigure);
   GlassRow = (unsigned int *) (Block + MaxBlock);
 
@@ -1255,7 +1284,7 @@ int DoLoad(char *BufAddr, size_t BufLen) {
 
 int LoadGame(char *Name) {
   unsigned int i;
-  unsigned int *Par = (unsigned int *)(&P);
+  unsigned int *Par = (unsigned int *)(&G.P);
 
   struct stat st;
 
@@ -1300,7 +1329,7 @@ int LoadGame(char *Name) {
 
 void ExportGame(void){
   unsigned int i, Order[] = {2,7,0,1,4,5,6,8,9,10,11,12,3};
-  unsigned int *Par = (unsigned int *)(&P);
+  unsigned int *Par = (unsigned int *)(&G.P);
 
 
   if ((GameType != 1) || (strcmp(ParentName, "none") == 0))
@@ -1334,7 +1363,7 @@ void ExportGame(void){
 
 void Report() {
   if (GameType == 1) {
-    if ((P.Goal != FILL_GOAL) && (!GoalReached))
+    if ((Goal != FILL_GOAL) && (!GoalReached))
       snprintf(MsgBuf, OM_STRLEN,  "%d", FigureNum);
   } else if (GameType == 2) {
     MsgBuf[0] = '\0';
@@ -1355,6 +1384,8 @@ Usage: omnimino infile\n\
 int main(int argc,char *argv[]){
   int argi;
   char FName[OM_STRLEN + 1];
+
+  InitGame();
 
   if (argc > 1) {
     for (argi = 1; argi < argc; argi++){

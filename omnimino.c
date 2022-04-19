@@ -37,6 +37,34 @@
 
 #include <ncurses.h>
 
+
+/**************************************
+
+           Constants
+
+**************************************/
+
+#define MAX_FIGURE_SIZE 8
+
+#define MAX_GLASS_WIDTH 32 /*UINT_WIDTH*/
+#define MAX_GLASS_HEIGHT 256
+
+#define OM_STRLEN 80
+
+enum GoalTypes {
+  FILL_GOAL,
+  TOUCH_GOAL,
+  FLAT_GOAL,
+  MAX_GOAL
+};
+
+
+/**************************************
+
+           Types
+
+**************************************/
+
 struct Coord {
   int x, y;
 };
@@ -59,28 +87,6 @@ struct Parameters {
 
 typedef void (*bfunc) (struct Coord *, int *);
 
-/**************************************
-
-           Constants
-
-**************************************/
-#define MAX_FIGURE_SIZE 8
-
-#define MAX_GLASS_WIDTH 32 /*UINT_WIDTH*/
-#define MAX_GLASS_HEIGHT 256
-
-#define GLASS_SIZE (MAX_GLASS_HEIGHT+MAX_FIGURE_SIZE+1)
-#define MAX_BLOCK_NUM ((MAX_GLASS_WIDTH*MAX_GLASS_HEIGHT)+(2*MAX_FIGURE_SIZE))
-
-#define OM_STRLEN 80
-
-enum GoalTypes {
-  FILL_GOAL,
-  TOUCH_GOAL,
-  FLAT_GOAL,
-  MAX_GOAL
-};
-
 
 /**************************************
 
@@ -89,6 +95,7 @@ enum GoalTypes {
 **************************************/
 
 struct Parameters P;
+
 
 /**************************************
 
@@ -102,12 +109,9 @@ unsigned int FigureNum;
 unsigned int CurFigure;
 
 
-unsigned int *FillBuf;
-unsigned int * BlockN;
-struct Coord *Block;
-
 char PlayerName[OM_STRLEN + 1];
 unsigned int TimeStamp;
+
 
 /**************************************
 
@@ -117,8 +121,8 @@ unsigned int TimeStamp;
 
 unsigned int GameType;
 
-char MsgBuf[OM_STRLEN + 1] = "";
-char *Msg = MsgBuf;
+char MsgBuf[OM_STRLEN + 1];
+char *Msg;
 
 char GameName[OM_STRLEN + 1];
 
@@ -126,9 +130,6 @@ unsigned int FigureSize;
 unsigned int TotalArea;
 unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
 
-
-unsigned int *GlassRow;       /* used by SaveGame too */
-unsigned int GlassRowBufSize;
 
 unsigned int NextFigure; /* used to navigate through figures */
 unsigned int Untouched; /* lowest unmodified */
@@ -138,7 +139,23 @@ unsigned int GlassLevel; /* lowest free line */
 
 int GameOver;
 int GoalReached;
-int GameModified=0;
+int GameModified;
+
+
+/**************************************
+
+           Allocated buffers
+
+**************************************/
+
+size_t GameBufSize = 0;
+
+unsigned int *FillBuf = NULL;
+unsigned int * BlockN;
+struct Coord *Block;
+unsigned int *GlassRow;       /* used by SaveGame too */
+
+size_t StoreBufSize;
 
 
 /**************************************
@@ -846,7 +863,7 @@ void SaveGame(void){
 
 
   StorePtr = (char *) GlassRow;
-  StoreFree = GlassRowBufSize;
+  StoreFree = StoreBufSize;
 
 
   for (i = 0; i < PARNUM; i++, UPtr++)
@@ -884,7 +901,7 @@ void SaveGame(void){
   TimeStamp = (unsigned int)time(NULL);
   StoreUnsigned(TimeStamp, '\n');
 
-  Used = GlassRowBufSize - StoreFree;
+  Used = StoreBufSize - StoreFree;
   md5hash(GlassRow, Used, GameName);
   strcat(GameName, ".mino");
 
@@ -1124,8 +1141,8 @@ int LoadData(void) {
 
   if (ReadInt((int *)&FigureNum, 0) != 0) {
     Msg = "[15] FigureNum : load error.";
-  } else if (FigureNum > MAX_BLOCK_NUM) {
-    snprintf(MsgBuf, OM_STRLEN, "[15] FigureNum (%d) > MAX_BLOCK_NUM (%d).",FigureNum,MAX_BLOCK_NUM);
+  } else if (FigureNum > TotalArea) {
+    snprintf(MsgBuf, OM_STRLEN, "[15] FigureNum (%d) > TotalArea (%d).", FigureNum, TotalArea);
   } else if (FigureNum == 0) {
     Msg = "[15] FigureNum must not be 0.";
   } else if (ReadInt((int *)&CurFigure, 0) != 0) {
@@ -1155,20 +1172,16 @@ int LoadData(void) {
 }
 
 
-void  *GameBuf = NULL;
-size_t GameBufSize = 0;
-
-
 int AllocateBuffers() {
-  unsigned int NewGameBufSize;
 
   /* FillBuf, BlockN, Block, GlassRow = StoreBuf */
 
-  unsigned int FillBufSize = P.FillLevel * sizeof(int);
-  unsigned int MaxBlockN = TotalArea + 2 * MAX_FIGURE_SIZE;
-  unsigned int BlockBufSize  = MaxBlockN * sizeof(struct Coord);
-  unsigned int MaxFigure = MaxBlockN / P.WeightMin + 3;
-  unsigned int BlockNBufSize = MaxFigure * sizeof(struct Coord); 
+  unsigned int MaxFigure = TotalArea / P.WeightMin + 3;
+  unsigned int MaxBlock = TotalArea + 2 * MAX_FIGURE_SIZE;
+
+  size_t FillBufSize = P.FillLevel * sizeof(int);
+  size_t BlockNBufSize = MaxFigure * sizeof(int); 
+  size_t BlockBufSize  = MaxBlock * sizeof(struct Coord);
 
 /*
   Sizes of the parameters and data text representations
@@ -1178,44 +1191,38 @@ int AllocateBuffers() {
   FigureNum:  10+1 = 11
   CurFigure:  10+1 = 11
   FillBuf:    FillLevel * (10+1) = FillLevel * 11
-  BlockN:     MaxFigure * (10+1) = MaxFigure * 11
-  Block:      MaxBlockN * (2+1,4+1) = MaxBlockN * 8
+  BlockN:     (FigureNum+2) * (10+1) = MaxFigure * 11
+  Block:      MaxBlock * (2+1,4+1) = MaxBlock * 8
   PlayerName: OM_STRLEN+1 = 81
   TimeStamp:  10+1 = 11
 */
 
-  unsigned int StoreBufSize = 62 + 81 + 11 + 11 +
-                              P.FillLevel * 11 +
-                              MaxFigure * 11 +
-                              MaxBlockN * 11 +
-                              81 + 11;
+  StoreBufSize = 62 + 81 + 11 + 11 + P.FillLevel * 11 +
+                 MaxFigure * 11 + MaxBlock * 11 + 81 + 11;
 
-  NewGameBufSize = FillBufSize + BlockNBufSize + BlockBufSize + StoreBufSize;
+  size_t NewGameBufSize = FillBufSize + BlockNBufSize + BlockBufSize + StoreBufSize;
 
-  if (GameBuf == NULL) {
+  if (FillBuf == NULL) {
     GameBufSize = NewGameBufSize;
-    GameBuf = malloc(GameBufSize);
-    if (GameBuf == NULL) {
+    FillBuf = malloc(GameBufSize);
+    if (FillBuf == NULL) {
       snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %ld byte buffer.", (long)GameBufSize);
       return 1;
     }
   } else {
     if (NewGameBufSize > GameBufSize) {
       GameBufSize = NewGameBufSize;
-      GameBuf = realloc(GameBuf, GameBufSize);
-      if (GameBuf == NULL) {
+      FillBuf = realloc(FillBuf, GameBufSize);
+      if (FillBuf == NULL) {
         snprintf(MsgBuf, OM_STRLEN, "Failed to reallocate %ld byte buffer.", (long)GameBufSize);
         return 1;
       }
     }
   }
 
-  FillBuf = (unsigned int *) GameBuf;
   BlockN = (unsigned int *) (FillBuf + P.FillLevel);
   Block = (struct Coord *) (BlockN + MaxFigure);
-  GlassRow = (unsigned int *) (Block + MaxBlockN);
-
-  GlassRowBufSize = StoreBufSize;
+  GlassRow = (unsigned int *) (Block + MaxBlock);
 
   return 0;
 }
@@ -1252,6 +1259,9 @@ int LoadGame(char *Name) {
 
   struct stat st;
 
+
+  snprintf(GameName, OM_STRLEN, "%s", basename(Name));
+
   for (i = 0; i < PARNUM; i++)
     Par[i] = -1;
 
@@ -1262,6 +1272,7 @@ int LoadGame(char *Name) {
 
   GameType = 3;
 
+  GameModified=0;
 
   if (stat(Name, &st) < 0) {
     snprintf(MsgBuf, OM_STRLEN, "Can not stat file %s.", Name);
@@ -1276,7 +1287,6 @@ int LoadGame(char *Name) {
         Msg = "mmap failed.";
       } else {
         Buf[st.st_size] = '\0';
-        snprintf(GameName, OM_STRLEN, "%s", basename(Name));
         int Err = DoLoad(Buf, st.st_size);
         munmap(Buf, st.st_size + 1);
         return Err;
@@ -1304,7 +1314,7 @@ void ExportGame(void){
   fprintf(stdout,"\"%s\", ", GameName);
   fprintf(stdout,"\"%s\", ", PlayerName);
   fprintf(stdout,"%u, ", TimeStamp);
-  fprintf(stdout, GameType == 1 ? "%s," : "\"%s\", ", Msg);
+  fprintf(stdout, GameType == 1 ? "%s, " : "\"%s\", ", Msg);
 
   fprintf(stdout,"},\n");
 

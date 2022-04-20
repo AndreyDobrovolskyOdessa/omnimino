@@ -435,11 +435,15 @@ static void Drop(struct Coord **FigN) {
 
 
 static void ClearFullRows(void) {
-  unsigned int r, w, FullRowNum, GlassSize;
+  unsigned int r, w, FullRowNum;
 
-  GlassSize = GlassHeight + FigureSize + 1;
+  unsigned int GlassSize = GlassHeight + FigureSize + 1;
+  unsigned int Upper = GlassLevel;
 
-  for(r = w = 0 ; r < GlassHeight ; r++){
+  if (Goal == FLAT_GOAL)
+    Upper--;
+
+  for(r = w = 0 ; r < Upper ; r++){
     if (GlassRow[r] != FullRow)
       GlassRow[w++] = GlassRow[r];
   }

@@ -49,8 +49,6 @@
 #define MAX_GLASS_WIDTH 32 /*UINT_WIDTH*/
 #define MAX_GLASS_HEIGHT 256
 
-#define OM_STRLEN 80
-
 enum GoalTypes {
   FILL_GOAL,
   TOUCH_GOAL,
@@ -58,72 +56,8 @@ enum GoalTypes {
   MAX_GOAL
 };
 
+#include "omnifunc.h"
 
-/**************************************
-
-           Types
-
-**************************************/
-
-struct Coord {
-  int x, y;
-};
-
-typedef void (*bfunc) (struct Coord *, int *);
-
-struct OmniParms {
-  unsigned int Aperture;
-  unsigned int Metric; /* 0 - abs(x1-x0)+abs(y1-y0), 1 - max(abs(x1-x0),abs(y1-y0)) */
-  unsigned int WeightMax;
-  unsigned int WeightMin;
-  unsigned int Gravity;
-  unsigned int FlatFun; /* single-layer, moving figure can not overlap placed blocks */
-  unsigned int FullRowClear;
-  unsigned int Goal;
-  unsigned int GlassWidth;
-  unsigned int GlassHeightBuf;
-  unsigned int FillLevel;
-  unsigned int FillRatio; /* < GlassWidth */
-  unsigned int SlotsUnique;
-};
-
-#define PARNUM (sizeof(struct OmniParms) / sizeof(unsigned int))
-
-struct OmniData {
-  struct Coord **LastFigure;
-  struct Coord **CurFigure;
-  struct Coord **NextFigure; /* used to navigate through figures */
-  struct Coord **Untouched; /* lowest unmodified */
-  unsigned int TimeStamp;
-  unsigned int GameType;
-  unsigned int FigureSize;
-  unsigned int TotalArea;
-  unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
-  unsigned int GlassHeight; /* can change during game if FullRowClear */
-  unsigned int GlassLevel; /* lowest free line */
-  int GameOver;
-  int GoalReached;
-  int GameModified;
-  size_t GameBufSize;
-  unsigned int *FillBuf;
-  struct Coord **Figure;
-  struct Coord *Block;
-  unsigned int *GlassRow;       /* used by SaveGame too */
-  size_t StoreBufSize;
-};
-
-struct OmniStrings {
-  char MsgBuf[OM_STRLEN + 1];
-  char GameName[OM_STRLEN + 1];
-  char ParentName[OM_STRLEN + 1];
-  char PlayerName[OM_STRLEN + 1];
-};
-
-struct Omnimino {
-  struct OmniParms P;
-  struct OmniData D;
-  struct OmniStrings S;
-};
 
 /**************************************
 
@@ -131,7 +65,7 @@ struct Omnimino {
 
 **************************************/
 
-struct Omnimino G;
+static struct Omnimino G;
 
 
 #define Aperture       (G.P.Aperture)
@@ -180,118 +114,26 @@ void InitGame(void) {
   GameBufSize = 0;
 }
 
-/**************************************
-
-           Basic game functions
-
-**************************************/
-
-void ScaleUp(struct Coord *B,int *V){
-  (void) V;
-  (B->x)<<=1; (B->y)<<=1;
-}
-
-void FindLeft(struct Coord *B,int *V){
-  if((*V)>(B->x)) (*V)=(B->x);
-}
-
-void FindBottom(struct Coord *B,int *V){
-  if((*V)>(B->y)) (*V)=(B->y);
-}
-
-void FindRight(struct Coord *B,int *V){
-  if((*V)<(B->x)) (*V)=(B->x);
-}
-
-void FindTop(struct Coord *B,int *V){
-  if((*V)<(B->y)) (*V)=(B->y);
-}
-
-void AddX(struct Coord *B,int *V){
-  (B->x)+=(*V);
-}
-
-void AddY(struct Coord *B,int *V){
-  (B->y)+=(*V);
-}
-
-void NegX(struct Coord *B,int *V){
-  (void) V;
-  (B->x)=-(B->x);
-}
-
-void SwapXY(struct Coord *B,int *V){
-  (*V)=(B->x);
-  (B->x)=(B->y);
-  (B->y)=(*V);
-}
-
-void RotCW(struct Coord *B,int *V){
-  NegX(B,V);
-  SwapXY(B,V);
-}
-
-void RotCCW(struct Coord *B,int *V){
-  SwapXY(B,V);
-  NegX(B,V);
-}
-
-void FitWidth(struct Coord *B, int *Err){
+static void FitWidth(struct Coord *B, int *Err){
   (*Err) |= ( (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth) );
 }
 
-void FitHeight(struct Coord *B, int *Err){
+static void FitHeight(struct Coord *B, int *Err){
   (*Err) |= ( (((B->y)>>1) < 0) || (((B->y)>>1) >= (int)(GlassHeight+FigureSize+1)) );
 }
 
-void FitGlass(struct Coord *B, int *Err){
+static void FitGlass(struct Coord *B, int *Err){
   FitWidth(B,Err);
   FitHeight(B,Err);
 }
 
-void AndGlass(struct Coord *B, int *Err){
+static void AndGlass(struct Coord *B, int *Err){
   (*Err) |= ( GlassRow[(B->y)>>1] & (1<<((B->x)>>1)) );
 }
 
-void PlaceIntoGlass(struct Coord *B, int *V){
+static void PlaceIntoGlass(struct Coord *B, int *V){
   (void) V;
   GlassRow[(B->y)>>1] |= (1<<((B->x)>>1));
-}
-
-
-int ForEachIn(struct Coord **F, bfunc Func, int V){
-  struct Coord *B = *F++;
-
-  while (B < *F)
-    (*Func)(B++, &V);
-
-  return V;
-}
-
-
-int Dimension(struct Coord **F, bfunc FindMin, bfunc FindMax){
-  return (ForEachIn(F,FindMax,INT_MIN)-ForEachIn(F,FindMin,INT_MAX))>>1;
-}
-
-int Center(struct Coord **F, bfunc FindMin, bfunc FindMax){
-  return (ForEachIn(F,FindMin,INT_MAX)+ForEachIn(F,FindMax,INT_MIN))>>1;
-}
-
-void Normalize(struct Coord **F,struct Coord *C){
-  (C->x)=Center(F,FindLeft,FindRight);
-  (C->y)=Center(F,FindBottom,FindTop);
-  ForEachIn(F,AddX,-(C->x));
-  ForEachIn(F,AddY,-(C->y));
-}
-
-struct Coord *CopyFigure(struct Coord **Dst, struct Coord **Src) {
-  int Len = Src[1] - Src[0];
-
-  if((*Dst) > (*Src))
-    Dst[1]  = Dst[0] + Len;
-  memcpy(*Dst, *Src, Len * sizeof(struct Coord));
-
-  return *Dst;
 }
 
 
@@ -301,7 +143,7 @@ struct Coord *CopyFigure(struct Coord **Dst, struct Coord **Src) {
 
 **************************************/
 
-void FillGlass(void){
+static void FillGlass(void){
   unsigned int i, Places, Blocks;
 
   for (i = 0 ; i < FillLevel ; i++) {
@@ -316,12 +158,7 @@ void FillGlass(void){
 }
 
 
-int FindBlock(struct Coord *B, struct Coord *A, int Len) {
-  for (;Len && (((B->x) != (A->x)) || ((B->y) != (A->y))); Len--, A++);
-  return Len;
-}
-
-int SelectSlots(struct Coord *Slot, struct Coord *FBlock, int Weight) {
+static int SelectSlots(struct Coord *Slot, struct Coord *FBlock, int Weight) {
   int SlotNum = 0, SeedCnt, x, y;
   int UseNeighbours = ((Aperture == 0) && Weight);
   int ApertureSize = ((Aperture == 0) ? (Weight ? 3 : 1) : Aperture);
@@ -353,7 +190,7 @@ int SelectSlots(struct Coord *Slot, struct Coord *FBlock, int Weight) {
 #define MAX_SLOTS MAX_SLOTS_COMPACT
 #endif
 
-int NewFigure(struct Coord *F) {
+static int NewFigure(struct Coord *F) {
   unsigned int i;
   struct Coord Slot[MAX_SLOTS], *B;
   
@@ -372,7 +209,7 @@ int NewFigure(struct Coord *F) {
 
 **************************************/
 
-void NewGame(void)
+static void NewGame(void)
 {
   srand((unsigned int)time(NULL));
 
@@ -395,11 +232,11 @@ void NewGame(void)
            
 **************************************/
 
-SCREEN *Screen = NULL;
-WINDOW *MyScr = NULL;
+static SCREEN *Screen = NULL;
+static WINDOW *MyScr = NULL;
 
 
-void StartCurses(void) {
+static void StartCurses(void) {
   Screen = newterm(NULL, stderr, stdin);
   if (Screen) {
     set_term(Screen);
@@ -409,14 +246,14 @@ void StartCurses(void) {
   }
 }
 
-void DeleteMyScr(void) {
+static void DeleteMyScr(void) {
   if (MyScr) {
     delwin(MyScr);
     MyScr = NULL;
   }
 }
 
-void StopCurses() {
+static void StopCurses() {
   if (Screen) {
     DeleteMyScr();
     endwin();
@@ -428,14 +265,14 @@ void StopCurses() {
 
 #define MAX_ROW_LEN ((MAX_GLASS_WIDTH+2)*2)
 
-void PutRowImage(unsigned int Row, char *Image, int N) {
+static void PutRowImage(unsigned int Row, char *Image, int N) {
   for (;N--; Row >>= 1) {
     *Image++ = (Row & 1) ? '[' : ' ';
     *Image++ = (Row & 1) ? ']' : ' ';
   }
 }
 
-void DrawGlass(int GlassRowN) {
+static void DrawGlass(int GlassRowN) {
   int RowN;
   char RowImage[MAX_ROW_LEN];
 
@@ -449,7 +286,7 @@ void DrawGlass(int GlassRowN) {
 }
 
 
-int SelectGlassRow(void) {
+static int SelectGlassRow(void) {
   int FCV = Center((CurFigure < LastFigure) ? CurFigure : (CurFigure - 1), FindBottom, FindTop) >> 1;
   unsigned int GlassRowN = FCV + (FigureSize / 2) + 1;
 
@@ -469,12 +306,12 @@ int SelectGlassRow(void) {
   return GlassRowN;
 }
 
-void DrawBlock(struct Coord *B,int *GRN) {
+static void DrawBlock(struct Coord *B,int *GRN) {
   mvwchgat(MyScr, (*GRN) - ((B->y) >> 1) ,((B->x) & (~1)) + 2, 2, A_REVERSE, 0, NULL);
 }
 
 
-void DrawQueue(void) {
+static void DrawQueue(void) {
   int x, y;
   struct Coord C;
 
@@ -505,7 +342,7 @@ void DrawQueue(void) {
 
 
 
-void DrawStatus(void) {
+static void DrawStatus(void) {
   int MsgLen = strlen(MsgBuf);
   int StatusY = getmaxy(MyScr) - 1;
   int StatusX = getmaxx(MyScr) - MsgLen;
@@ -516,7 +353,7 @@ void DrawStatus(void) {
   mvwaddnstr(MyScr, StatusY, StatusX , MsgBuf, MsgLen);
 }
 
-int ShowScreen(void) {
+static int ShowScreen(void) {
   if (Screen) {
     if (MyScr == NULL) {
       if ((MyScr = newwin(0, 0, 0, 0)) == NULL)
@@ -551,7 +388,7 @@ int ShowScreen(void) {
 **************************************/
 
 
-unsigned int Unfilled(void){
+static unsigned int Unfilled(void){
   unsigned int i, s, r;
 
   for(i = 0, s = 0; i < GlassHeight; i++) {
@@ -565,14 +402,14 @@ unsigned int Unfilled(void){
 }
 
 
-void DetectGlassLevel(void) {
+static void DetectGlassLevel(void) {
   GlassLevel = GlassHeight + FigureSize + 1;
   while ((GlassLevel > 0) && (GlassRow[GlassLevel - 1] == 0))
     GlassLevel--;
 }
 
 
-void Drop(struct Coord **FigN) {
+static void Drop(struct Coord **FigN) {
   CopyFigure(LastFigure, FigN);
   if(Gravity){
     if(!FlatFun){
@@ -590,7 +427,7 @@ void Drop(struct Coord **FigN) {
 }
 
 
-void ClearFullRows(void) {
+static void ClearFullRows(void) {
   unsigned int r, w, FullRowNum, GlassSize;
 
   GlassSize = GlassHeight + FigureSize + 1;
@@ -613,7 +450,7 @@ void ClearFullRows(void) {
 }
 
 
-void Deploy(struct Coord **F) {
+static void Deploy(struct Coord **F) {
   struct Coord C;
 
   Normalize(F, &C);
@@ -623,7 +460,7 @@ void Deploy(struct Coord **F) {
 }
 
 
-void CheckGameState(void) {
+static void CheckGameState(void) {
   switch(Goal){
     case TOUCH_GOAL:
       if ((ForEachIn(LastFigure, FindBottom, INT_MAX) >> 1) == 0)
@@ -643,7 +480,7 @@ void CheckGameState(void) {
 }
 
 
-void RewindGlassState(void) {
+static void RewindGlassState(void) {
   unsigned int i, GlassSize;
 
   for (i=0; i < FillLevel; i++)
@@ -695,18 +532,18 @@ void GetGlassState(void) {
 
 **************************************/
 
-int KeepPlaying;
+static int KeepPlaying;
 
-void ExitWithSave(void){
+static void ExitWithSave(void){
   KeepPlaying = 0;
 }
 
-void ExitWithoutSave(void){
+static void ExitWithoutSave(void){
   GameModified=0;
   KeepPlaying = 0;
 }
 
-void Attempt(bfunc F, int V) {
+static void Attempt(bfunc F, int V) {
   if (!GameOver) {
     struct Coord C;
 
@@ -724,37 +561,37 @@ void Attempt(bfunc F, int V) {
   }
 }
 
-void MoveCurLeft(void){
+static void MoveCurLeft(void){
   Attempt(AddX, -2);
 }
 
-void MoveCurRight(void){
+static void MoveCurRight(void){
   Attempt(AddX, 2);
 }
 
-void MoveCurDown(void){
+static void MoveCurDown(void){
   if (!Gravity)
     Attempt(AddY, -2);
 }
 
-void MoveCurUp(void){
+static void MoveCurUp(void){
   if (!Gravity)
     Attempt(AddY, 2);
 }
 
-void RotateCurCW(void){
+static void RotateCurCW(void){
   Attempt(RotCW, 0);
 }
 
-void RotateCurCCW(void){
+static void RotateCurCCW(void){
   Attempt(RotCCW, 0);
 }
 
-void MirrorCurVert(void){
+static void MirrorCurVert(void){
   Attempt(NegX, 0);
 }
 
-void DropCur(void){
+static void DropCur(void){
   if((!GameOver)&&
      (ForEachIn(CurFigure,FitGlass,0)==0)&&
      (ForEachIn(CurFigure,AndGlass,0)==0)){
@@ -762,25 +599,25 @@ void DropCur(void){
   }
 }
 
-void UndoFigure(void) {
+static void UndoFigure(void) {
   if (CurFigure > Figure)
     NextFigure = CurFigure - 1;
 }
 
-void RedoFigure(void) {
+static void RedoFigure(void) {
   if ((CurFigure + 1) < Untouched)
     NextFigure = CurFigure + 1;
 }
 
-void Rewind(void) {
+static void Rewind(void) {
   NextFigure = Figure;
 }
 
-void LastPlayed(void) {
+static void LastPlayed(void) {
   NextFigure = Untouched - 1;
 }
 
-struct KBinding {
+static struct KBinding {
   int Key;
   void (*Action)(void);
 } KBindList[] = {
@@ -811,7 +648,7 @@ struct KBinding {
 };
 
 
-void ExecuteCmd(void){
+static void ExecuteCmd(void){
   int Key;
   struct KBinding *P;
   void (*Func)(void);
@@ -855,15 +692,11 @@ int PlayGame(void){
 **************************************/
 
 
-#define stringize(s) stringyze(s)
-#define stringyze(s) #s
+static char *StorePtr;
 
+static int StoreFree;
 
-char *StorePtr;
-
-int StoreFree;
-
-void Adjust(int Done) {
+static void Adjust(int Done) {
   if (Done >= StoreFree)
     Done = StoreFree;
 
@@ -873,23 +706,23 @@ void Adjust(int Done) {
   StorePtr += Done;
 }
 
-void StoreInt(int V, int Delim) {
+static void StoreInt(int V, int Delim) {
   Adjust(snprintf(StorePtr, StoreFree, "%d%c", V, (char)Delim));
 }
 
-void StoreUnsigned(unsigned int V, int Delim) {
+static void StoreUnsigned(unsigned int V, int Delim) {
   Adjust(snprintf(StorePtr, StoreFree, "%u%c", V, (char)Delim));
 }
 
-void StoreBlockAddr(struct Coord *V, int Delim) {
+static void StoreBlockAddr(struct Coord *V, int Delim) {
   Adjust(snprintf(StorePtr, StoreFree, "%u%c", (int)(V - Block), (char)Delim));
 }
 
-void StorePointer(struct Coord **V, int Delim) {
+static void StorePointer(struct Coord **V, int Delim) {
   Adjust(snprintf(StorePtr, StoreFree, "%u%c", (int)(V - Figure), (char)Delim));
 }
 
-void StoreString(char *S) {
+static void StoreString(char *S) {
   Adjust(snprintf(StorePtr, StoreFree, "%s\n", S));
 }
 
@@ -971,7 +804,7 @@ void SaveGame(void){
 **************************************/
 
 
-int CheckParameters(void){
+static int CheckParameters(void){
   if (Aperture > MAX_FIGURE_SIZE){
     snprintf(MsgBuf, OM_STRLEN, "[1] Aperture (%d) > MAX_FIGURE_SIZE (%d)", Aperture, MAX_FIGURE_SIZE);
   } else if (Metric > 1){
@@ -1035,10 +868,10 @@ int CheckParameters(void){
 }
 
 
-char *LoadPtr;
+static char *LoadPtr;
 
 
-int ReadInt(int *V, int Delim) {
+static int ReadInt(int *V, int Delim) {
   char *EndPtr;
 
   *V = (int)strtol(LoadPtr, &EndPtr, 10);
@@ -1058,7 +891,7 @@ int ReadInt(int *V, int Delim) {
 }
 
 
-int ReadBlockAddr(struct Coord **P, int Delim) {
+static int ReadBlockAddr(struct Coord **P, int Delim) {
   int V;
 
   if (ReadInt(&V, Delim) != 0)
@@ -1070,7 +903,7 @@ int ReadBlockAddr(struct Coord **P, int Delim) {
 }
 
 
-int ReadPointer(struct Coord ***P, int Delim) {
+static int ReadPointer(struct Coord ***P, int Delim) {
   int V;
 
   if (ReadInt(&V, Delim) != 0)
@@ -1082,7 +915,7 @@ int ReadPointer(struct Coord ***P, int Delim) {
 }
 
 
-void ReadString(char *S) {
+static void ReadString(char *S) {
   int i;
 
   for (i = 0; *LoadPtr; LoadPtr++) {
@@ -1098,7 +931,7 @@ void ReadString(char *S) {
 }
 
 
-int LoadParameters(void) {
+static int LoadParameters(void) {
   unsigned int i;
   unsigned int *Par = (unsigned int *) (&G.P);
 
@@ -1112,7 +945,7 @@ int LoadParameters(void) {
   return 0;
 }
 
-int WrongUnits(unsigned int R){
+static int WrongUnits(unsigned int R){
   unsigned int n;
 
   if ((R & (~FullRow)) != 0)
@@ -1124,7 +957,7 @@ int WrongUnits(unsigned int R){
   return n != FillRatio;
 }
 
-int ReadGlassFill(void) {
+static int ReadGlassFill(void) {
   unsigned int i;
 
   for (i = 0; i < FillLevel; i++) {
@@ -1137,7 +970,7 @@ int ReadGlassFill(void) {
 }
 
 
-int CheckGlassFill(void) {
+static int CheckGlassFill(void) {
   unsigned int i;
 
   for (i = 0; i < FillLevel; i++) {
@@ -1150,7 +983,7 @@ int CheckGlassFill(void) {
 }
 
 
-int ReadFigures(void) {
+static int ReadFigures(void) {
   unsigned int i;
   struct Coord **F;
 
@@ -1164,7 +997,7 @@ int ReadFigures(void) {
 }
 
 
-int CheckFigures(void) {
+static int CheckFigures(void) {
   unsigned int i, FW;
   struct Coord **F;
 
@@ -1193,7 +1026,7 @@ int CheckFigures(void) {
 }
 
 
-int ReadBlocks(void) {
+static int ReadBlocks(void) {
   unsigned int i;
   struct Coord *B;
 
@@ -1207,7 +1040,7 @@ int ReadBlocks(void) {
 }
 
 
-int CheckBlocks(void) {
+static int CheckBlocks(void) {
   unsigned int i, FS;
   struct Coord **F;
 
@@ -1226,7 +1059,7 @@ int CheckBlocks(void) {
 }
 
 
-int CheckData(void) {
+static int CheckData(void) {
   int MaxFigure = TotalArea / WeightMin + 1;
 
   if ((LastFigure - Figure) > MaxFigure) {
@@ -1244,7 +1077,7 @@ int CheckData(void) {
 }
 
 
-int LoadData(void) {
+static int LoadData(void) {
 
   ReadString(ParentName);
 
@@ -1278,7 +1111,7 @@ int LoadData(void) {
 }
 
 
-int AllocateBuffers() {
+static int AllocateBuffers() {
 
   /* FillBuf, BlockN, Block, GlassRow = StoreBuf */
 
@@ -1339,7 +1172,7 @@ int AllocateBuffers() {
 #include <sys/mman.h>
 
 
-int DoLoad(char *BufAddr, size_t BufLen) {
+static int DoLoad(char *BufAddr, size_t BufLen) {
   char BufName[OM_STRLEN + 1];
 
   md5hash(BufAddr, BufLen, BufName);
@@ -1414,7 +1247,7 @@ int CheckGame(void) {
 }
 
 
-void ExportGame(void){
+static void ExportGame(void){
   unsigned int i, Order[] = {2,7,0,1,4,5,6,8,9,10,11,12,3};
   unsigned int *Par = (unsigned int *)(&G.P);
 
@@ -1463,43 +1296,4 @@ void Report() {
   }
 }
 
-
-#define USAGE "Omnimino 0.5 Copyright (C) 2019-2022 Andrey Dobrovolsky\n\n\
-Usage: omnimino infile\n\
-       ls *.mino | omnimino > outfile\n\n"
-
-int main(int argc,char *argv[]){
-  int argi;
-  char FName[OM_STRLEN + 1];
-
-  InitGame();
-
-  if (argc > 1) {
-    for (argi = 1; argi < argc; argi++){
-      if (LoadGame(argv[argi]) == 0) {
-        if (PlayGame())
-          SaveGame();
-      }
-      Report();
-    }
-  } else {
-    if (isatty(fileno(stdin))) {
-      if (isatty(fileno(stdout))) {
-        fprintf(stdout, USAGE);
-      }
-    } else {
-      while (!feof(stdin)) {
-        if (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
-          if (LoadGame(FName) == 0) {
-            if (CheckGame() == 0)
-              GetGlassState();
-          }
-          Report();
-        }
-      }
-    }
-  }
-
-  return 0;
-}
 

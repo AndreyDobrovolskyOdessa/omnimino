@@ -297,20 +297,6 @@ struct Coord *CopyFigure(struct Coord **Dst, struct Coord **Src) {
 }
 
 
-unsigned int Unfilled(void){
-  unsigned int i, s, r;
-
-  for(i = 0, s = 0; i < GlassHeight; i++) {
-    for(r = (~GlassRow[i]) & FullRow; r; r >>= 1) {
-      if (r & 1)
-        s++;
-    }
-  }
-
-  return s;
-}
-
-
 /**************************************
 
            New game functions
@@ -561,6 +547,20 @@ int ShowScreen(void) {
         Various game functions
 
 **************************************/
+
+
+unsigned int Unfilled(void){
+  unsigned int i, s, r;
+
+  for(i = 0, s = 0; i < GlassHeight; i++) {
+    for(r = (~GlassRow[i]) & FullRow; r; r >>= 1) {
+      if (r & 1)
+        s++;
+    }
+  }
+
+  return s;
+}
 
 
 void DetectGlassLevel(void) {
@@ -822,7 +822,7 @@ void ExecuteCmd(void){
 }
 
 
-void PlayGame(void){
+int PlayGame(void){
   if (GameType == 2)
     NewGame();
 
@@ -838,6 +838,8 @@ void PlayGame(void){
   } while (KeepPlaying);
 
   StopCurses();
+
+  return GameModified;
 }
 
 
@@ -1451,8 +1453,7 @@ int main(int argc,char *argv[]){
   if (argc > 1) {
     for (argi = 1; argi < argc; argi++){
       if (LoadGame(argv[argi]) == 0) {
-        PlayGame();
-        if (GameModified)
+        if (PlayGame())
           SaveGame();
       }
       Report();

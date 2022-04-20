@@ -665,6 +665,9 @@ void RewindGlassState(void) {
 
 
 void GetGlassState(void) {
+  if (LastFigure == Figure)
+    return; /* don't process empty game */
+
   if (NextFigure < CurFigure)
     RewindGlassState();
 
@@ -1318,6 +1321,8 @@ int DoLoad(char *BufAddr, size_t BufLen) {
   if ((LoadParameters() != 0) || (CheckParameters() != 0) || (AllocateBuffers() != 0))
     return 1;
 
+  LastFigure = Figure; /* mark missing game data */
+
   if (strcmp(BufName, GameName) != 0) {
     GameType = 2;
     return 0;
@@ -1449,8 +1454,7 @@ int main(int argc,char *argv[]){
       while (!feof(stdin)) {
         if (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
           if (LoadGame(FName) == 0) {
-            if (GameType == 1)
-              GetGlassState();
+            GetGlassState();
           }
           Report();
         }

@@ -1008,13 +1008,13 @@ static int CheckFigures(void) {
   for (i = 0, F = Figure; F < LastFigure; F++, i++) {
     FW = F[1] - F[0];
     if (FW < WeightMin) {
-      snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", (int)((F - Figure) - 1), FW, WeightMin); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", i, FW, WeightMin); return 1;
     }
     if (FW > WeightMax) {
-      snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", (int)((F - Figure) - 1), FW, WeightMax); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", i, FW, WeightMax); return 1;
     }
-    if (((*(F - 1)) - Block) >= (int)TotalArea) {
-      snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", (int)((F - Figure) - 1)); return 1;
+    if ((F[0] - Block) >= (int)TotalArea) {
+      snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", i); return 1;
     }
   }
 
@@ -1066,7 +1066,7 @@ static int CheckData(void) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", (int)(LastFigure - Figure), MaxFigure);
   } else if (LastFigure <= Figure) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure must not be <= 0.");
-  } else if (CurFigure > LastFigure) {
+  } else if ((CurFigure > LastFigure) && (GameType != 1)) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
   } else if (CurFigure < Figure) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurtFigure must not be < 0.");

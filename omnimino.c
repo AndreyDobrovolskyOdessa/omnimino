@@ -318,22 +318,26 @@ void FillGlass(void){
 }
 
 
-int FindBlock(struct Coord *B,struct Coord *A,int Len){
+int FindBlock(struct Coord *B, struct Coord *A, int Len) {
   for (;Len && (((B->x) != (A->x)) || ((B->y) != (A->y))); Len--, A++);
   return Len;
 }
 
-int SelectSlots(struct Coord *Slot,struct Coord *FBlock,int Weight){
-  int SlotNum = 0, ApertureSize, HalfSize, SeedCnt, x, y, Delta;
+int SelectSlots(struct Coord *Slot, struct Coord *FBlock, int Weight) {
+  int SlotNum = 0, SeedCnt, x, y;
+  int UseNeighbours = ((Aperture == 0) && Weight);
+  int ApertureSize = ((Aperture == 0) ? (Weight ? 3 : 1) : Aperture);
+  int HalfSize = ApertureSize / 2;
+  int SeedMax = (UseNeighbours ? Weight : 1);
+  int MaxX = ApertureSize - HalfSize;
 
-  ApertureSize = (Aperture == 0) ? (Weight ? 3 : 1) : Aperture;
-  HalfSize = ApertureSize / 2;
-  for(SeedCnt = 0; SeedCnt < (((Aperture == 0) && Weight) ? Weight : 1); SeedCnt++){
-    for(x = -HalfSize; x < (ApertureSize - HalfSize); x++){
-      Delta = Metric ? 0 : abs(x);
-      for(y = -HalfSize+Delta; y < (ApertureSize - HalfSize - Delta); y++){
-        Slot[SlotNum].x = x + (((Aperture == 0) && Weight) ? FBlock[SeedCnt].x : 0);
-        Slot[SlotNum].y = y + (((Aperture == 0) && Weight) ? FBlock[SeedCnt].y : 0);
+  for(SeedCnt = 0; SeedCnt < SeedMax; SeedCnt++){
+    for(x = -HalfSize; x < MaxX; x++){
+      int Delta = (Metric ? 0 : abs(x));
+      int MaxY = MaxX - Delta;
+      for(y = -HalfSize + Delta; y < MaxY; y++){
+        Slot[SlotNum].x = x + (UseNeighbours ? FBlock[SeedCnt].x : 0);
+        Slot[SlotNum].y = y + (UseNeighbours ? FBlock[SeedCnt].y : 0);
         if (((Weight >= (int)WeightMin) || (!FindBlock(Slot + SlotNum, FBlock, Weight))) &&
            ((!SlotsUnique) || (!FindBlock(Slot + SlotNum, Slot, SlotNum))))
           SlotNum++;
@@ -1420,7 +1424,7 @@ void Report() {
 
 #define USAGE "Omnimino 0.5 Copyright (C) 2019-2022 Andrey Dobrovolsky\n\n\
 Usage: omnimino infile\n\
-       ls *.mino | omnimino > outfile\n"
+       ls *.mino | omnimino > outfile\n\n"
 
 int main(int argc,char *argv[]){
   int argi;

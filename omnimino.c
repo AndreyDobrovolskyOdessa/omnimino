@@ -1133,10 +1133,20 @@ int ReadGlassFill(void) {
 
   for (i = 0; i < FillLevel; i++) {
     if (ReadInt((int *)(FillBuf + i), ';') != 0) {
-      Msg = "[17] GlassRow load error."; return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[17] GlassRow[%d] load error.", i); return 1;
     }
+  }
+
+  return 0;
+}
+
+
+int CheckGlassFill(void) {
+  unsigned int i;
+
+  for (i = 0; i < FillLevel; i++) {
     if (WrongUnits(FillBuf[i])) {
-      snprintf(MsgBuf, OM_STRLEN, "[17] Wrong GlassRow[%d] = %d.",i,FillBuf[i]); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[17] Wrong GlassRow[%d] = %d.", i, FillBuf[i]); return 1;
     }
   }
 
@@ -1145,46 +1155,12 @@ int ReadGlassFill(void) {
 
 
 int ReadFigures(void) {
-  unsigned int FW;
+  unsigned int i;
   struct Coord **F;
 
-  for (F = Figure; F <= LastFigure; F++) {
+  for (i = 0, F = Figure; F <= LastFigure; F++, i++) {
     if(ReadBlockAddr(F, ';') != 0){
-      Msg = "[18] BlockN load error."; return 1;
-    }
-    if (F == Figure) {
-      if (Figure[0] != Block) {
-        Msg = "[18] Figure[0] must be 0."; return 1;
-      }
-    } else {
-      FW = (*F) - (*(F - 1));
-      if (FW < WeightMin) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", (int)((F - Figure) - 1), FW, WeightMin); return 1;
-      }
-      if (FW > WeightMax) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", (int)((F - Figure) - 1), FW, WeightMax); return 1;
-      }
-      if (((*(F - 1)) - Block) >= (int)TotalArea) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", (int)((F - Figure) - 1)); return 1;
-      }
-    }
-  }
-
-  if (((*LastFigure) - Block) < (int)TotalArea) {
-    Msg = "[18] Not enough blocks to cover the glass free area."; return 1;
-  }
-
-  return 0;
-}
-
-
-int ReadBlocks(void) {
-  /* unsigned int i; */
-  struct Coord *B;
-
-  for (B = Block; B < *LastFigure; B++) {
-    if ((ReadInt(&(B->x), ',') != 0) || (ReadInt(&(B->y), ';') != 0)) {
-      snprintf(MsgBuf, OM_STRLEN, "[19] Block[%d] : load error.", (int)(B - Block)); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] load error.", i); return 1;
     }
   }
 
@@ -1193,17 +1169,60 @@ int ReadBlocks(void) {
 
 
 int CheckFigures(void) {
-  unsigned int FS;
+  unsigned int i, FW;
   struct Coord **F;
 
-  for (F = Figure; F < LastFigure; F++) {
+  if (Figure[0] != Block) {
+    snprintf(MsgBuf, OM_STRLEN, "[18] Figure[0] must be 0."); return 1;
+  }
+
+  for (i = 0, F = Figure; F < LastFigure; F++, i++) {
+    FW = F[1] - F[0];
+    if (FW < WeightMin) {
+      snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", (int)((F - Figure) - 1), FW, WeightMin); return 1;
+    }
+    if (FW > WeightMax) {
+      snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", (int)((F - Figure) - 1), FW, WeightMax); return 1;
+    }
+    if (((*(F - 1)) - Block) >= (int)TotalArea) {
+      snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", (int)((F - Figure) - 1)); return 1;
+    }
+  }
+
+  if (((*LastFigure) - Block) < (int)TotalArea) {
+    snprintf(MsgBuf, OM_STRLEN, "[18] Not enough blocks to cover the glass free area."); return 1;
+  }
+
+  return 0;
+}
+
+
+int ReadBlocks(void) {
+  unsigned int i;
+  struct Coord *B;
+
+  for (i = 0, B = Block; B < *LastFigure; B++, i++) {
+    if ((ReadInt(&(B->x), ',') != 0) || (ReadInt(&(B->y), ';') != 0)) {
+      snprintf(MsgBuf, OM_STRLEN, "[19] Block[%d] : load error.", i); return 1;
+    }
+  }
+
+  return 0;
+}
+
+
+int CheckBlocks(void) {
+  unsigned int i, FS;
+  struct Coord **F;
+
+  for (i = 0, F = Figure; F < LastFigure; F++, i++) {
     FS = Dimension(F, FindLeft, FindRight);
     if (FS > FigureSize) {
-      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] width (%d) > FigureSize (%d)", (int)(F - Figure), FS, FigureSize); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] width (%d) > FigureSize (%d)", i, FS, FigureSize); return 1;
     }
     FS = Dimension(F, FindBottom, FindTop);
     if (FS > FigureSize) {
-      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] height (%d) > FigureSize (%d)", (int)(F - Figure), FS, FigureSize); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] height (%d) > FigureSize (%d)", i, FS, FigureSize); return 1;
     }
   }
 
@@ -1227,9 +1246,11 @@ int LoadData(void) {
   } else if (CurFigure > LastFigure) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
   } else if ((ReadGlassFill() == 0) &&
+             (CheckGlassFill() == 0) &&
              (ReadFigures() == 0) &&
+             (CheckFigures() == 0) &&
              (ReadBlocks() == 0) &&
-             (CheckFigures() == 0)) {
+             (CheckBlocks() == 0)) {
     ReadString(PlayerName); /* skip new line following block descriptions */
     ReadString(PlayerName);
 

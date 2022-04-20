@@ -113,7 +113,6 @@ struct OmniData {
 };
 
 struct OmniStrings {
-  char *Msg;
   char MsgBuf[OM_STRLEN + 1];
   char GameName[OM_STRLEN + 1];
   char ParentName[OM_STRLEN + 1];
@@ -170,7 +169,6 @@ struct Omnimino G;
 #define GlassRow     (G.D.GlassRow)
 #define StoreBufSize (G.D.StoreBufSize)
 
-#define Msg        (G.S.Msg)
 #define MsgBuf     (G.S.MsgBuf)
 #define GameName   (G.S.GameName)
 #define ParentName (G.S.ParentName)
@@ -1236,13 +1234,13 @@ int LoadData(void) {
   ReadString(ParentName);
 
   if (ReadPointer(&LastFigure, 0) != 0) {
-    Msg = "[15] LastFigure : load error.";
+    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure : load error.");
   } else if ((LastFigure - Figure) > MaxFigure) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", (int)(LastFigure - Figure), MaxFigure);
   } else if (LastFigure == Figure) {
-    Msg = "[15] LastFigure must not be 0.";
+    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure must not be 0.");
   } else if (ReadPointer(&CurFigure, 0) != 0) {
-    Msg = "[16] CurFigure : load error.";
+    snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure : load error.");
   } else if (CurFigure > LastFigure) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
   } else if ((ReadGlassFill() == 0) &&
@@ -1255,7 +1253,7 @@ int LoadData(void) {
     ReadString(PlayerName);
 
     if (ReadInt((int *)&TimeStamp, 0) != 0) {
-      Msg = "[21] TimeStamp read error.";
+      snprintf(MsgBuf, OM_STRLEN, "[21] TimeStamp read error.");
     } else {
 
       NextFigure=CurFigure;
@@ -1366,7 +1364,6 @@ int LoadGame(char *Name) {
     Par[i] = -1;
 
   MsgBuf[0] = '\0';
-  Msg = MsgBuf;
   PlayerName[0] = '\0';
   TimeStamp = 0;
 
@@ -1384,7 +1381,7 @@ int LoadGame(char *Name) {
       char *Buf = mmap(NULL, st.st_size + 1, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
       close(fd);
       if (Buf == MAP_FAILED) {
-        Msg = "mmap failed.";
+        snprintf(MsgBuf, OM_STRLEN, "mmap failed.");
       } else {
         Buf[st.st_size] = '\0';
         int Err = DoLoad(Buf, st.st_size);
@@ -1414,7 +1411,7 @@ void ExportGame(void){
   fprintf(stdout,"\"%s\", ", GameName);
   fprintf(stdout,"\"%s\", ", PlayerName);
   fprintf(stdout,"%u, ", TimeStamp);
-  fprintf(stdout, GameType == 1 ? "%s, " : "\"%s\", ", Msg);
+  fprintf(stdout, GameType == 1 ? "%s, " : "\"%s\", ", MsgBuf);
 
   fprintf(stdout,"},\n");
 
@@ -1441,7 +1438,7 @@ void Report() {
   }
 
   if (isatty(fileno(stdout))) {
-    fprintf(stdout, "%s\n", Msg);
+    fprintf(stdout, "%s\n", MsgBuf);
   } else {
     ExportGame();
   }

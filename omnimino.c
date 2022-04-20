@@ -346,9 +346,16 @@ static void DrawStatus(void) {
   int MsgLen = strlen(MsgBuf);
   int StatusY = getmaxy(MyScr) - 1;
   int StatusX = getmaxx(MyScr) - MsgLen;
+  char *Sym = " TF-+";
 
-  if (GameOver)
-    mvwaddnstr(MyScr, StatusY, StatusX  - 1, GoalReached ? "+" : "-", 1);
+  if (GameOver) {
+    Sym += 3;
+    if (GoalReached)
+      Sym++;
+  } else
+    Sym += Goal;
+
+  mvwaddnstr(MyScr, StatusY, StatusX  - 2, Sym, 1);
 
   mvwaddnstr(MyScr, StatusY, StatusX , MsgBuf, MsgLen);
 }

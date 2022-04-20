@@ -623,7 +623,7 @@ void Deploy(struct Coord **F) {
 }
 
 
-void CheckGame(void) {
+void CheckGameState(void) {
   switch(Goal){
     case TOUCH_GOAL:
       if ((ForEachIn(LastFigure, FindBottom, INT_MAX) >> 1) == 0)
@@ -663,8 +663,6 @@ void RewindGlassState(void) {
 
 
 void GetGlassState(void) {
-  if (LastFigure == Figure)
-    return; /* don't process empty game */
 
   if (NextFigure < CurFigure)
     RewindGlassState();
@@ -677,7 +675,7 @@ void GetGlassState(void) {
     Drop(CurFigure++);
     if (FullRowClear)
       ClearFullRows();
-    CheckGame();
+    CheckGameState();
     if (GameOver)
       NextFigure = CurFigure;
   }
@@ -1228,22 +1226,34 @@ int CheckBlocks(void) {
 }
 
 
-int LoadData(void) {
+int CheckData(void) {
   int MaxFigure = TotalArea / WeightMin + 1;
+
+  if ((LastFigure - Figure) > MaxFigure) {
+    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", (int)(LastFigure - Figure), MaxFigure);
+  } else if (LastFigure <= Figure) {
+    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure must not be <= 0.");
+  } else if (CurFigure > LastFigure) {
+    snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
+  } else if (CurFigure < Figure) {
+    snprintf(MsgBuf, OM_STRLEN, "[16] CurtFigure must not be < 0.");
+  } else
+    return 0;
+
+  return 1;
+}
+
+
+int LoadData(void) {
 
   ReadString(ParentName);
 
   if (ReadPointer(&LastFigure, 0) != 0) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure : load error.");
-  } else if ((LastFigure - Figure) > MaxFigure) {
-    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", (int)(LastFigure - Figure), MaxFigure);
-  } else if (LastFigure == Figure) {
-    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure must not be 0.");
   } else if (ReadPointer(&CurFigure, 0) != 0) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure : load error.");
-  } else if (CurFigure > LastFigure) {
-    snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
-  } else if ((ReadGlassFill() == 0) &&
+  } else if ((CheckData() == 0) &&
+             (ReadGlassFill() == 0) &&
              (CheckGlassFill() == 0) &&
              (ReadFigures() == 0) &&
              (CheckFigures() == 0) &&
@@ -1395,6 +1405,15 @@ int LoadGame(char *Name) {
 }
 
 
+int CheckGame(void) {
+  return (CheckParameters() ||
+          CheckData() ||
+          CheckGlassFill() ||
+          CheckFigures() ||
+          CheckBlocks()); 
+}
+
+
 void ExportGame(void){
   unsigned int i, Order[] = {2,7,0,1,4,5,6,8,9,10,11,12,3};
   unsigned int *Par = (unsigned int *)(&G.P);
@@ -1472,7 +1491,8 @@ int main(int argc,char *argv[]){
       while (!feof(stdin)) {
         if (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
           if (LoadGame(FName) == 0) {
-            GetGlassState();
+            if (CheckGame() == 0)
+              GetGlassState();
           }
           Report();
         }

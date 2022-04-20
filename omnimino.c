@@ -879,11 +879,11 @@ void StoreUnsigned(unsigned int V, int Delim) {
 }
 
 void StoreBlockAddr(struct Coord *V, int Delim) {
-  Adjust(snprintf(StorePtr, StoreFree, "%u%c", V - Block, (char)Delim));
+  Adjust(snprintf(StorePtr, StoreFree, "%u%c", (int)(V - Block), (char)Delim));
 }
 
 void StorePointer(struct Coord **V, int Delim) {
-  Adjust(snprintf(StorePtr, StoreFree, "%u%c", V - Figure, (char)Delim));
+  Adjust(snprintf(StorePtr, StoreFree, "%u%c", (int)(V - Figure), (char)Delim));
 }
 
 void StoreString(char *S) {
@@ -1174,13 +1174,13 @@ int ReadFigures(void) {
     } else {
       FW = (*F) - (*(F - 1));
       if (FW < WeightMin) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", (F - Figure) - 1, FW, WeightMin); return 1;
+        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) < WeightMin (%d)", (int)((F - Figure) - 1), FW, WeightMin); return 1;
       }
       if (FW > WeightMax) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", (F - Figure) - 1, FW, WeightMax); return 1;
+        snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", (int)((F - Figure) - 1), FW, WeightMax); return 1;
       }
       if (((*(F - 1)) - Block) >= (int)TotalArea) {
-        snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", (F - Figure) - 1); return 1;
+        snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", (int)((F - Figure) - 1)); return 1;
       }
     }
   }
@@ -1199,7 +1199,7 @@ int ReadBlocks(void) {
 
   for (B = Block; B < *LastFigure; B++) {
     if ((ReadInt(&(B->x), ',') != 0) || (ReadInt(&(B->y), ';') != 0)) {
-      snprintf(MsgBuf, OM_STRLEN, "[19] Block[%d] : load error.", B - Block); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[19] Block[%d] : load error.", (int)(B - Block)); return 1;
     }
   }
 
@@ -1214,11 +1214,11 @@ int CheckFigures(void) {
   for (F = Figure; F < LastFigure; F++) {
     FS = Dimension(F, FindLeft, FindRight);
     if (FS > FigureSize) {
-      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] width (%d) > FigureSize (%d)", F - Figure, FS, FigureSize); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] width (%d) > FigureSize (%d)", (int)(F - Figure), FS, FigureSize); return 1;
     }
     FS = Dimension(F, FindBottom, FindTop);
     if (FS > FigureSize) {
-      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] height (%d) > FigureSize (%d)", F - Figure, FS, FigureSize); return 1;
+      snprintf(MsgBuf, OM_STRLEN, "[19] Figure[%d] height (%d) > FigureSize (%d)", (int)(F - Figure), FS, FigureSize); return 1;
     }
   }
 
@@ -1234,13 +1234,13 @@ int LoadData(void) {
   if (ReadPointer(&LastFigure, 0) != 0) {
     Msg = "[15] LastFigure : load error.";
   } else if ((LastFigure - Figure) > MaxFigure) {
-    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", LastFigure - Figure, MaxFigure);
+    snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", (int)(LastFigure - Figure), MaxFigure);
   } else if (LastFigure == Figure) {
     Msg = "[15] LastFigure must not be 0.";
   } else if (ReadPointer(&CurFigure, 0) != 0) {
     Msg = "[16] CurFigure : load error.";
   } else if (CurFigure > LastFigure) {
-    snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",CurFigure - Figure, LastFigure - Figure);
+    snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
   } else if ((ReadGlassFill() == 0) &&
              (ReadFigures() == 0) &&
              (ReadBlocks() == 0) &&
@@ -1427,7 +1427,7 @@ void ExportGame(void){
 void Report() {
   if (GameType == 1) {
     if ((Goal != FILL_GOAL) && (!GoalReached))
-      snprintf(MsgBuf, OM_STRLEN,  "%d", LastFigure - Figure);
+      snprintf(MsgBuf, OM_STRLEN,  "%d", (int)(LastFigure - Figure));
   } else if (GameType == 2) {
     MsgBuf[0] = '\0';
   }

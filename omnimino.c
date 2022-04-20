@@ -1056,46 +1056,24 @@ int ReadInt(int *V, int Delim) {
 
 
 int ReadBlockAddr(struct Coord **P, int Delim) {
-  char *EndPtr;
-  unsigned int V;
+  int V;
 
-  V = (unsigned int)strtol(LoadPtr, &EndPtr, 10);
-  if (LoadPtr == EndPtr)
+  if (ReadInt(&V, Delim) != 0)
     return 1;
 
-  if (Delim != 0) {
-    if (*EndPtr++ != Delim)
-      return 1;
-  } else {
-    while (*EndPtr && (*EndPtr++ != '\n'));
-  }
-
   *P = Block + V;
-
-  LoadPtr = EndPtr;
 
   return 0; 
 }
 
 
 int ReadPointer(struct Coord ***P, int Delim) {
-  char *EndPtr;
-  unsigned int V;
+  int V;
 
-  V = (unsigned int)strtol(LoadPtr, &EndPtr, 10);
-  if (LoadPtr == EndPtr)
+  if (ReadInt(&V, Delim) != 0)
     return 1;
 
-  if (Delim != 0) {
-    if (*EndPtr++ != Delim)
-      return 1;
-  } else {
-    while (*EndPtr && (*EndPtr++ != '\n'));
-  }
-
   *P = Figure + V;
-
-  LoadPtr = EndPtr;
 
   return 0; 
 }

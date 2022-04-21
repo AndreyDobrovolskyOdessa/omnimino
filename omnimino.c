@@ -82,26 +82,29 @@ static struct Omnimino G;
 #define FillRatio      (G.P.FillRatio)
 #define SlotsUnique    (G.P.SlotsUnique)
 
+#define FigureSize   (G.C.FigureSize)
+#define TotalArea    (G.C.TotalArea)
+#define FullRow      (G.C.FullRow)
+
 #define LastFigure   (G.D.LastFigure)
 #define CurFigure    (G.D.CurFigure)
-#define NextFigure   (G.D.NextFigure)
-#define Untouched    (G.D.Untouched)
 #define TimeStamp    (G.D.TimeStamp)
-#define GameType     (G.D.GameType)
-#define FigureSize   (G.D.FigureSize)
-#define TotalArea    (G.D.TotalArea)
-#define FullRow      (G.D.FullRow)
-#define GlassHeight  (G.D.GlassHeight)
-#define GlassLevel   (G.D.GlassLevel)
-#define GameOver     (G.D.GameOver)
-#define GoalReached  (G.D.GoalReached)
-#define GameModified (G.D.GameModified)
-#define GameBufSize  (G.D.GameBufSize)
-#define FillBuf      (G.D.FillBuf)
-#define Figure       (G.D.Figure)
-#define Block        (G.D.Block)
-#define GlassRow     (G.D.GlassRow)
-#define StoreBufSize (G.D.StoreBufSize)
+
+#define NextFigure   (G.V.NextFigure)
+#define LastTouched  (G.V.LastTouched)
+#define GameType     (G.V.GameType)
+#define GlassHeight  (G.V.GlassHeight)
+#define GlassLevel   (G.V.GlassLevel)
+#define GameOver     (G.V.GameOver)
+#define GoalReached  (G.V.GoalReached)
+#define GameModified (G.V.GameModified)
+
+#define GameBufSize  (G.M.GameBufSize)
+#define FillBuf      (G.M.FillBuf)
+#define Figure       (G.M.Figure)
+#define Block        (G.M.Block)
+#define GlassRow     (G.M.GlassRow)
+#define StoreBufSize (G.M.StoreBufSize)
 
 #define MsgBuf     (G.S.MsgBuf)
 #define GameName   (G.S.GameName)
@@ -200,29 +203,6 @@ static int NewFigure(struct Coord *F) {
       B++;
   }
   return B-F;
-}
-
-
-/**************************************
-
-             NewGame
-
-**************************************/
-
-static void NewGame(void)
-{
-  srand((unsigned int)time(NULL));
-
-  FillGlass();
-
-  for (LastFigure = Figure, Figure[0] = Block; ((*LastFigure) - Figure[0]) < (int)TotalArea; LastFigure++){
-    LastFigure[1] = (*LastFigure) + NewFigure(*LastFigure);
-    ForEachIn(LastFigure, ScaleUp, 0);
-  }
-
-  CurFigure = Figure + 1; Untouched = NextFigure = Figure;
-
-  strcpy(ParentName, "none");
 }
 
 
@@ -511,13 +491,10 @@ static void RewindGlassState(void) {
 
 
 void GetGlassState(void) {
-
-  if (NextFigure < CurFigure)
-    RewindGlassState();
-
   while (CurFigure < NextFigure) {
     if ((ForEachIn(CurFigure, FitGlass, 0) != 0) || (ForEachIn(CurFigure, AndGlass, 0) != 0)) {
-      Untouched = NextFigure = CurFigure;
+      NextFigure = CurFigure;
+      LastTouched = CurFigure - 1;
       break;
     }
     Drop(CurFigure++);
@@ -528,14 +505,41 @@ void GetGlassState(void) {
       NextFigure = CurFigure;
   }
 
-  if(CurFigure >= Untouched){
+  if(CurFigure > LastTouched){
     if(CurFigure < LastFigure)
       Deploy(CurFigure);
-    Untouched = CurFigure + 1;
+    LastTouched = CurFigure;
   }
 
   snprintf(MsgBuf, OM_STRLEN, "%d", (Goal == FILL_GOAL) ? Unfilled() : (unsigned int)(CurFigure - Figure));
 }
+
+
+/**************************************
+
+             NewGame
+
+**************************************/
+
+static void NewGame(void)
+{
+  srand((unsigned int)time(NULL));
+
+  FillGlass();
+
+  for (LastFigure = Figure, Figure[0] = Block; ((*LastFigure) - Figure[0]) < (int)TotalArea; LastFigure++){
+    LastFigure[1] = (*LastFigure) + NewFigure(*LastFigure);
+    ForEachIn(LastFigure, ScaleUp, 0);
+  }
+
+  NextFigure = Figure;
+  LastTouched = Figure - 1;
+
+  RewindGlassState();
+
+  strcpy(ParentName, "none");
+}
+
 
 /**************************************
 
@@ -566,7 +570,7 @@ static void Attempt(bfunc F, int V) {
     if((ForEachIn(LastFigure,FitGlass,0)==0)&&
        ((!FlatFun) || (ForEachIn(LastFigure,AndGlass,0)==0))){
       CopyFigure(CurFigure,LastFigure);
-      Untouched=CurFigure+1;
+      LastTouched = CurFigure;
       GameModified=1;
     }
   }
@@ -611,21 +615,24 @@ static void DropCur(void){
 }
 
 static void UndoFigure(void) {
-  if (CurFigure > Figure)
+  if (CurFigure > Figure) {
     NextFigure = CurFigure - 1;
+    RewindGlassState();
+  }
 }
 
 static void RedoFigure(void) {
-  if ((CurFigure + 1) < Untouched)
+  if (CurFigure < LastTouched)
     NextFigure = CurFigure + 1;
 }
 
 static void Rewind(void) {
   NextFigure = Figure;
+  RewindGlassState();
 }
 
 static void LastPlayed(void) {
-  NextFigure = Untouched - 1;
+  NextFigure = LastTouched;
 }
 
 static struct KBinding {
@@ -1077,7 +1084,8 @@ static int CheckData(void) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", (int)(LastFigure - Figure), MaxFigure);
   } else if (LastFigure <= Figure) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure must not be <= 0.");
-  } else if ((CurFigure > LastFigure) && (GameType != 1)) {
+  /* } else if ((CurFigure > LastFigure) && (GameType != 1)) { */
+  } else if (CurFigure > LastFigure) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
   } else if (CurFigure < Figure) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurtFigure must not be < 0.");
@@ -1109,10 +1117,12 @@ static int LoadData(void) {
     if (ReadInt((int *)&TimeStamp, 0) != 0) {
       snprintf(MsgBuf, OM_STRLEN, "[21] TimeStamp read error.");
     } else {
+      GameType = 1;
 
       NextFigure=CurFigure;
-      CurFigure=Untouched=NextFigure+1;
-      GameType = 1;
+      LastTouched = CurFigure;
+
+      RewindGlassState();
 
       return 0;
     }

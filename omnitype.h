@@ -32,21 +32,33 @@ struct OmniParms {
 
 #define PARNUM (sizeof(struct OmniParms) / sizeof(unsigned int))
 
+
+struct OmniConsts {              /* Parameters' derivatives */
+  unsigned int FigureSize;
+  unsigned int TotalArea;
+  unsigned int FullRow;
+};
+
+
 struct OmniData {
   struct Coord **LastFigure;
   struct Coord **CurFigure;
-  struct Coord **NextFigure; /* used to navigate through figures */
-  struct Coord **Untouched; /* lowest unmodified */
   unsigned int TimeStamp;
+};
+
+struct OmniVars {
+  struct Coord **NextFigure; /* used to navigate through figures */
+  struct Coord **LastTouched; /* latest modified */
   unsigned int GameType;
-  unsigned int FigureSize;
-  unsigned int TotalArea;
-  unsigned int FullRow; /* template, defined once per game, depends on GlassWidth */
   unsigned int GlassHeight; /* can change during game if FullRowClear */
   unsigned int GlassLevel; /* lowest free line */
   int GameOver;
   int GoalReached;
   int GameModified;
+};
+
+
+struct OmniMem {
   size_t GameBufSize;
   unsigned int *FillBuf;
   struct Coord **Figure;
@@ -54,6 +66,7 @@ struct OmniData {
   unsigned int *GlassRow;       /* used by SaveGame too */
   size_t StoreBufSize;
 };
+
 
 #define OM_STRLEN 80
 
@@ -65,8 +78,11 @@ struct OmniStrings {
 };
 
 struct Omnimino {
-  struct OmniParms P;
-  struct OmniData D;
+  struct OmniParms   P;
+  struct OmniConsts  C;
+  struct OmniData    D;
+  struct OmniVars    V;
+  struct OmniMem     M;
   struct OmniStrings S;
 };
 

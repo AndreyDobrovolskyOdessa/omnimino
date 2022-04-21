@@ -666,10 +666,12 @@ static struct KBinding {
 };
 
 
-static void ExecuteCmd(void){
+static int ExecuteCmd(void){
   int Key;
   struct KBinding *P;
   void (*Func)(void);
+
+  KeepPlaying = 1;
 
   do {
     Key=getch();
@@ -677,6 +679,8 @@ static void ExecuteCmd(void){
   } while(Func==NULL);
 
   (*Func)();
+
+  return KeepPlaying;
 }
 
 
@@ -686,16 +690,17 @@ int PlayGame(void){
 
   StartCurses();
 
-  KeepPlaying = 1;
-
-  do {
+  do
     GetGlassState();
-    if (ShowScreen() == 0)
-      break;
-    ExecuteCmd();
-  } while (KeepPlaying);
+  while (ShowScreen() && ExecuteCmd());
 
   StopCurses();
+
+  if (GameModified) {
+    if ((GameType == 1) && (strcmp(ParentName, "none") == 0))
+      strcpy(ParentName, GameName);
+    GameType = 1;
+  }
 
   return GameModified;
 }
@@ -760,11 +765,6 @@ void SaveGame(void){
 
   for (i = 0; i < PARNUM; i++, UPtr++)
     StoreUnsigned(*UPtr, '\n');
-
-  if ((GameType == 1) && (strcmp(ParentName, "none") == 0))
-    strcpy(ParentName, GameName);
-
-  GameType = 1;
 
   StoreString(ParentName);
   StorePointer(LastFigure, '\n');
@@ -1084,7 +1084,6 @@ static int CheckData(void) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure (%d) > MaxFigure (%d).", (int)(LastFigure - Figure), MaxFigure);
   } else if (LastFigure <= Figure) {
     snprintf(MsgBuf, OM_STRLEN, "[15] LastFigure must not be <= 0.");
-  /* } else if ((CurFigure > LastFigure) && (GameType != 1)) { */
   } else if (CurFigure > LastFigure) {
     snprintf(MsgBuf, OM_STRLEN, "[16] CurFigure (%d) > [15] LastFigure (%d).",(int)(CurFigure - Figure), (int)(LastFigure - Figure));
   } else if (CurFigure < Figure) {

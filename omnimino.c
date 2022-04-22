@@ -395,14 +395,17 @@ static unsigned int Unfilled(void){
 }
 */
 
-
+/*
 static void DetectGlassLevel(void) {
   GlassLevel = GlassHeight + FigureSize + 1;
   while ((GlassLevel > 0) && (GlassRow[GlassLevel - 1] == 0))
     GlassLevel--;
 }
+*/
 
 static void Drop(struct Coord **FigN) {
+  unsigned int Top;
+
   CopyFigure(LastFigure, FigN);
   if(Gravity){
     if(!FlatFun){
@@ -417,7 +420,10 @@ static void Drop(struct Coord **FigN) {
   }
   ForEachIn(LastFigure,PlaceIntoGlass,0);
   EmptyCells -= ForEachIn(LastFigure, CountInner, 0);
-  DetectGlassLevel();
+  /* DetectGlassLevel(); */
+  Top = ForEachIn(LastFigure, FindTop, INT_MIN) >> 1;
+  if (Top >= GlassLevel)
+    GlassLevel = Top + 1;
 }
 
 

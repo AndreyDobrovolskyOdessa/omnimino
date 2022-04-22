@@ -6,7 +6,7 @@
 #include "omniplay.h"
 #include "omnisave.h"
 #include "omnilua.h"
-
+#include "omninew.h"
 
 #define stringize(s) stringyze(s)
 #define stringyze(s) #s
@@ -44,8 +44,10 @@ int main(int argc,char *argv[]){
   if (argc > 1) {
     for (argi = 1; argi < argc; argi++){
       if (LoadGame(&Game, argv[argi]) == 0) {
-        if (PlayGame(&Game))
-          SaveGame(&Game);
+        if ((Game.V.GameType == 1) || (NewGame(&Game) == 0)) {
+          if (PlayGame(&Game))
+            SaveGame(&Game);
+        }
       }
       Report(&Game);
     }

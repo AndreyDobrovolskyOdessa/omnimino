@@ -316,10 +316,8 @@ static int ExecuteCmd(void){
 
 
 int PlayGame(struct Omnimino *G){
-  GG = G;
 
-  if (GameType == 2)
-    NewGame(G);
+  GG = G;
 
   CurFigure = NextFigure + 1; /* forces RewindGlassState() */
 

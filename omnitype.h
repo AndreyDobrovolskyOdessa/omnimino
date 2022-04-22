@@ -4,6 +4,24 @@
 
 /**************************************
 
+           Constants
+
+**************************************/
+
+#define MAX_FIGURE_SIZE 8
+
+#define MAX_GLASS_WIDTH 32 /*UINT_WIDTH*/
+#define MAX_GLASS_HEIGHT 256
+
+enum GoalTypes {
+  FILL_GOAL,
+  TOUCH_GOAL,
+  FLAT_GOAL,
+  MAX_GOAL
+};
+
+/**************************************
+
            Omnimino types
 
 **************************************/

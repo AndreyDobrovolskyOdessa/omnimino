@@ -1,0 +1,50 @@
+#ifndef _OMNIMINO_DEF
+
+#define _OMNIMINO_DEF 1
+
+#define Aperture       (GG->P.Aperture)
+#define Metric         (GG->P.Metric)
+#define WeightMax      (GG->P.WeightMax)
+#define WeightMin      (GG->P.WeightMin)
+#define Gravity        (GG->P.Gravity)
+#define FlatFun        (GG->P.FlatFun)
+#define FullRowClear   (GG->P.FullRowClear)
+#define Goal           (GG->P.Goal)
+#define GlassWidth     (GG->P.GlassWidth)
+#define GlassHeightBuf (GG->P.GlassHeightBuf)
+#define FillLevel      (GG->P.FillLevel)
+#define FillRatio      (GG->P.FillRatio)
+#define SlotsUnique    (GG->P.SlotsUnique)
+
+#define FigureSize   (GG->C.FigureSize)
+#define TotalArea    (GG->C.TotalArea)
+#define FullRow      (GG->C.FullRow)
+
+#define LastFigure   (GG->D.LastFigure)
+#define NextFigure   (GG->D.NextFigure)
+#define TimeStamp    (GG->D.TimeStamp)
+
+#define CurFigure    (GG->V.CurFigure)
+#define LastTouched  (GG->V.LastTouched)
+#define GameType     (GG->V.GameType)
+#define GlassHeight  (GG->V.GlassHeight)
+#define GlassLevel   (GG->V.GlassLevel)
+#define EmptyCells   (GG->V.EmptyCells)
+#define GameOver     (GG->V.GameOver)
+#define GoalReached  (GG->V.GoalReached)
+#define GameModified (GG->V.GameModified)
+
+#define GameBufSize  (GG->M.GameBufSize)
+#define FillBuf      (GG->M.FillBuf)
+#define Figure       (GG->M.Figure)
+#define Block        (GG->M.Block)
+#define GlassRow     (GG->M.GlassRow)
+#define StoreBufSize (GG->M.StoreBufSize)
+
+#define MsgBuf     (GG->S.MsgBuf)
+#define GameName   (GG->S.GameName)
+#define ParentName (GG->S.ParentName)
+#define PlayerName (GG->S.PlayerName)
+
+#endif
+

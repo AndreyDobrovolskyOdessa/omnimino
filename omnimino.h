@@ -6,13 +6,12 @@
 #include "omnitype.h"
 
 
-void InitGame(void);
-int LoadGame(char *Name);
-int PlayGame(void);
-void SaveGame(void);
-void Report(void);
-int CheckGame(void);
-void EvaluateGame(void);
+void InitGame(struct Omnimino *G);
+
+void FitGlass(struct Coord *B, int *Err);
+void AndGlass(struct Coord *B, int *Err);
+
+void GetGlassState(struct Omnimino *G);
 
 #endif
 

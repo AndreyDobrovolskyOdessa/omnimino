@@ -52,6 +52,7 @@ struct OmniVars {
   unsigned int GameType;
   unsigned int GlassHeight; /* can change during game if FullRowClear */
   unsigned int GlassLevel; /* lowest free line */
+  unsigned int EmptyCells;
   int GameOver;
   int GoalReached;
   int GameModified;

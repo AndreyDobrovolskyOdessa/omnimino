@@ -95,6 +95,7 @@ static struct Omnimino G;
 #define GameType     (G.V.GameType)
 #define GlassHeight  (G.V.GlassHeight)
 #define GlassLevel   (G.V.GlassLevel)
+#define EmptyCells   (G.V.EmptyCells)
 #define GameOver     (G.V.GameOver)
 #define GoalReached  (G.V.GoalReached)
 #define GameModified (G.V.GameModified)
@@ -137,6 +138,11 @@ static void AndGlass(struct Coord *B, int *Err){
 static void PlaceIntoGlass(struct Coord *B, int *V){
   (void) V;
   GlassRow[(B->y)>>1] |= (1<<((B->x)>>1));
+}
+
+static void CountInner(struct Coord *B, int *Cnt){
+  if (((B->y)>>1) < (int)GlassHeight)
+    (*Cnt)++;
 }
 
 
@@ -374,7 +380,7 @@ static int ShowScreen(void) {
 
 **************************************/
 
-
+/*
 static unsigned int Unfilled(void){
   unsigned int i, s, r;
 
@@ -387,6 +393,7 @@ static unsigned int Unfilled(void){
 
   return s;
 }
+*/
 
 
 static void DetectGlassLevel(void) {
@@ -394,7 +401,6 @@ static void DetectGlassLevel(void) {
   while ((GlassLevel > 0) && (GlassRow[GlassLevel - 1] == 0))
     GlassLevel--;
 }
-
 
 static void Drop(struct Coord **FigN) {
   CopyFigure(LastFigure, FigN);
@@ -410,6 +416,7 @@ static void Drop(struct Coord **FigN) {
     }
   }
   ForEachIn(LastFigure,PlaceIntoGlass,0);
+  EmptyCells -= ForEachIn(LastFigure, CountInner, 0);
   DetectGlassLevel();
 }
 
@@ -462,7 +469,7 @@ static void CheckGameState(void) {
         GoalReached = 1;
       break;
     default:
-      if(Unfilled() == 0)
+      if(EmptyCells == 0)
         GoalReached = 1;
   }
 
@@ -483,7 +490,8 @@ static void RewindGlassState(void) {
   for (; i < GlassSize; i++)
     GlassRow[i] = 0;
 
-  GlassLevel = FillLevel;
+  EmptyCells = TotalArea;
+  GlassLevel = FillRatio ? FillLevel : 0;
   CurFigure = Figure;
   GameOver = 0;
   GoalReached = 0;
@@ -514,7 +522,7 @@ void GetGlassState(void) {
     LastTouched = CurFigure;
   }
 
-  snprintf(MsgBuf, OM_STRLEN, "%d", (Goal == FILL_GOAL) ? Unfilled() : (unsigned int)(CurFigure - Figure));
+  snprintf(MsgBuf, OM_STRLEN, "%d", (Goal == FILL_GOAL) ? EmptyCells : (unsigned int)(CurFigure - Figure));
 }
 
 

@@ -13,6 +13,7 @@ void SaveGame(void);
 void Report(void);
 int CheckGame(void);
 void GetGlassState(void);
+void EvaluateGame(void);
 
 #endif
 

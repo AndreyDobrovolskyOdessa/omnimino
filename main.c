@@ -37,7 +37,7 @@ int main(int argc,char *argv[]){
         if (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
           if (LoadGame(FName) == 0) {
             if (CheckGame() == 0)
-              GetGlassState();
+              EvaluateGame();
           }
           Report();
         }

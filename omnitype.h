@@ -42,12 +42,12 @@ struct OmniConsts {              /* Parameters' derivatives */
 
 struct OmniData {
   struct Coord **LastFigure;
-  struct Coord **CurFigure;
+  struct Coord **NextFigure; /* used to navigate through figures */
   unsigned int TimeStamp;
 };
 
 struct OmniVars {
-  struct Coord **NextFigure; /* used to navigate through figures */
+  struct Coord **CurFigure;
   struct Coord **LastTouched; /* latest modified */
   unsigned int GameType;
   unsigned int GlassHeight; /* can change during game if FullRowClear */

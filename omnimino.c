@@ -119,11 +119,11 @@ void InitGame(void) {
 }
 
 static void FitWidth(struct Coord *B, int *Err){
-  (*Err) |= ( (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth) );
+  (*Err) = (*Err) || ( (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth) );
 }
 
 static void FitHeight(struct Coord *B, int *Err){
-  (*Err) |= ( (((B->y)>>1) < 0) || (((B->y)>>1) >= (int)(GlassHeight+FigureSize+1)) );
+  (*Err) = (*Err) || ( (((B->y)>>1) < 0) || (((B->y)>>1) >= (int)(GlassHeight+FigureSize+1)) );
 }
 
 static void FitGlass(struct Coord *B, int *Err){
@@ -132,7 +132,7 @@ static void FitGlass(struct Coord *B, int *Err){
 }
 
 static void AndGlass(struct Coord *B, int *Err){
-  (*Err) |= ( GlassRow[(B->y)>>1] & (1<<((B->x)>>1)) );
+  (*Err) = (*Err) || ( GlassRow[(B->y)>>1] & (1<<((B->x)>>1)) );
 }
 
 static void PlaceIntoGlass(struct Coord *B, int *V){
@@ -380,54 +380,7 @@ static int ShowScreen(void) {
 
 **************************************/
 
-/*
-static unsigned int Unfilled(void){
-  unsigned int i, s, r;
-
-  for(i = 0, s = 0; i < GlassHeight; i++) {
-    for(r = (~GlassRow[i]) & FullRow; r; r >>= 1) {
-      if (r & 1)
-        s++;
-    }
-  }
-
-  return s;
-}
-*/
-
-/*
-static void DetectGlassLevel(void) {
-  GlassLevel = GlassHeight + FigureSize + 1;
-  while ((GlassLevel > 0) && (GlassRow[GlassLevel - 1] == 0))
-    GlassLevel--;
-}
-*/
-
-static void Drop(struct Coord **FigN) {
-  unsigned int Top;
-
-  CopyFigure(LastFigure, FigN);
-  if(Gravity){
-    if(!FlatFun){
-      ForEachIn(LastFigure,AddY,-(ForEachIn(LastFigure,FindBottom,INT_MAX)&(~1)));
-      while((ForEachIn(LastFigure,FitGlass,0)==0)&&(ForEachIn(LastFigure,AndGlass,0)!=0))
-        ForEachIn(LastFigure,AddY,2);
-    }else{
-      while((ForEachIn(LastFigure,FitGlass,0)==0)&&(ForEachIn(LastFigure,AndGlass,0)==0))
-        ForEachIn(LastFigure,AddY,-2);
-      ForEachIn(LastFigure,AddY,2);
-    }
-  }
-  ForEachIn(LastFigure,PlaceIntoGlass,0);
-  EmptyCells -= ForEachIn(LastFigure, CountInner, 0);
-  /* DetectGlassLevel(); */
-  Top = ForEachIn(LastFigure, FindTop, INT_MIN) >> 1;
-  if (Top >= GlassLevel)
-    GlassLevel = Top + 1;
-}
-
-
-static void ClearFullRows(void) {
+static void ClearFullRows(unsigned int From, unsigned int To) {
   unsigned int r, w, FullRowNum;
 
   unsigned int GlassSize = GlassHeight + FigureSize + 1;
@@ -436,21 +389,67 @@ static void ClearFullRows(void) {
   if (Goal == FLAT_GOAL)
     Upper--;
 
-  for(r = w = 0 ; r < Upper ; r++){
+  if (To < Upper)
+    Upper = To;
+
+  for(r = w = From ; r < Upper ; r++){
     if (GlassRow[r] != FullRow)
       GlassRow[w++] = GlassRow[r];
   }
 
   FullRowNum = r - w;
 
-  for(; r < GlassSize ; r++, w++)
-    GlassRow[w] = GlassRow[r];
+  if ((int)FullRowNum > 0) {
+/*
+    for(; r < GlassSize ; r++, w++)
+      GlassRow[w] = GlassRow[r];
+*/
+    memmove(GlassRow + w, GlassRow + r, (GlassSize -r) * sizeof(int));
+/*
+    for(; w < GlassSize ; w++)
+      GlassRow[w] = 0;
+*/
+    memset(GlassRow + (GlassSize - FullRowNum), 0, FullRowNum * sizeof(int));
 
-  for(; w < GlassSize ; w++)
-    GlassRow[w] = 0;
+    GlassHeight -= FullRowNum;
+    GlassLevel -= FullRowNum;
+  }
+}
 
-  GlassHeight -= FullRowNum;
-  GlassLevel -= FullRowNum;
+
+static void Drop(struct Coord **FigN) {
+  unsigned int Top, Bottom, y;
+
+  CopyFigure(LastFigure, FigN);
+  y = ForEachIn(LastFigure, FindBottom, INT_MAX) & (~1);
+
+  if(Gravity){
+    Bottom = y >> 1;
+    if (FlatFun) {
+      for (y = Bottom; y > 0; y--) {
+        ForEachIn(LastFigure, AddY, -2);
+        if (ForEachIn(LastFigure,AndGlass,0) != 0) {
+          ForEachIn(LastFigure, AddY, 2);
+          break;
+        }
+      }
+    } else {
+      ForEachIn(LastFigure,AddY,-y);
+      for (y = 0; (y < Bottom) && (ForEachIn(LastFigure, AndGlass, 0) != 0); y++) {
+        ForEachIn(LastFigure,AddY,2);
+      }
+    }
+  } else {
+    y >>= 1;
+  }
+
+  ForEachIn(LastFigure,PlaceIntoGlass,0);
+  EmptyCells -= ForEachIn(LastFigure, CountInner, 0);
+  Top = (ForEachIn(LastFigure, FindTop, INT_MIN) >> 1) + 1;
+  if (Top > GlassLevel)
+    GlassLevel = Top;
+  if (FullRowClear)
+    ClearFullRows(y, Top);
 }
 
 
@@ -504,7 +503,7 @@ static void RewindGlassState(void) {
 }
 
 
-void GetGlassState(void) {
+static void GetGlassState(void) {
   if (CurFigure > NextFigure)
     RewindGlassState();
 
@@ -515,8 +514,6 @@ void GetGlassState(void) {
       break;
     }
     Drop(CurFigure++);
-    if (FullRowClear)
-      ClearFullRows();
     CheckGameState();
     if (GameOver)
       NextFigure = CurFigure;
@@ -557,8 +554,6 @@ static void NewGame(void)
 
   NextFigure = Figure;
   LastTouched = Figure - 1;
-
-  /* RewindGlassState(); */
 
   strcpy(ParentName, "none");
 }
@@ -638,10 +633,8 @@ static void DropCur(void){
 }
 
 static void UndoFigure(void) {
-  if (CurFigure > Figure) {
+  if (CurFigure > Figure)
     NextFigure = CurFigure - 1;
-    /* RewindGlassState(); */
-  }
 }
 
 static void RedoFigure(void) {
@@ -651,7 +644,6 @@ static void RedoFigure(void) {
 
 static void Rewind(void) {
   NextFigure = Figure;
-  /* RewindGlassState(); */
 }
 
 static void LastPlayed(void) {
@@ -793,7 +785,6 @@ void SaveGame(void){
 
   StoreString(ParentName);
   StorePointer(LastFigure, '\n');
-  /* StorePointer(CurFigure, '\n'); */
   StorePointer(NextFigure, '\n');
 
   for (i = 0; i < FillLevel; i++)
@@ -1144,10 +1135,7 @@ static int LoadData(void) {
     } else {
       GameType = 1;
 
-      /* NextFigure=CurFigure; */
       LastTouched = NextFigure;
-
-      /* RewindGlassState(); */
 
       return 0;
     }

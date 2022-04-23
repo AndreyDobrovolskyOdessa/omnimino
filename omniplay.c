@@ -13,6 +13,20 @@ static struct Omnimino *GG;
 
 #include "omnimino.def"
 
+
+/*******************************************************
+
+	Symbols, used to draw glass' walls and floor
+	depending on the Goal, GameOver and GoalReached
+	variables values.
+           
+*******************************************************/
+
+#define GOAL_SYM  ("+:=")
+#define LOOSE_SYM '-'
+#define WIN_SYM   '#'
+
+
 /**************************************
 
 	Screen functions
@@ -59,13 +73,25 @@ static void PutRowImage(unsigned int Row, char *Image, int N) {
   }
 }
 
+
 static void DrawGlass(int GlassRowN) {
   int RowN;
   char RowImage[MAX_ROW_LEN];
 
   GlassRowN -= (getmaxy(MyScr) - 1);
   for (RowN = getmaxy(MyScr) - 1; RowN >= 0; RowN--, GlassRowN++) {
-    memset(RowImage, (GlassRowN >= (int)GlassHeight) ? ' ' : '#', MAX_ROW_LEN);
+    int Sym;
+
+    if (GlassRowN >= (int)GlassHeight)
+      Sym = ' '; 
+    else if (!GameOver)
+      Sym = GOAL_SYM[Goal];
+    else if (!GoalReached)
+      Sym = LOOSE_SYM;
+    else
+      Sym = WIN_SYM;
+
+    memset(RowImage, Sym, MAX_ROW_LEN);
     if ((GlassRowN >= 0) && (GlassRowN < (int)(GlassHeight + FigureSize +1)))
       PutRowImage(GlassRow[GlassRowN], RowImage+2, GlassWidth);
     mvwaddnstr(MyScr, RowN, 0, RowImage, (GlassWidth + 2) * 2);
@@ -130,21 +156,16 @@ static void DrawQueue(void) {
 
 
 static void DrawStatus(void) {
-  int MsgLen = strlen(MsgBuf);
-  int StatusY = getmaxy(MyScr) - 1;
-  int StatusX = getmaxx(MyScr) - MsgLen;
-  char *Sym = " TF-+";
+  if (Gravity)
+    mvwaddch(MyScr, getmaxy(MyScr) - 3, 0, 'G');
 
-  if (GameOver) {
-    Sym += 3;
-    if (GoalReached)
-      Sym++;
-  } else
-    Sym += Goal;
+  if (FlatFun)
+    mvwaddch(MyScr, getmaxy(MyScr) - 2, 0, 'F');
 
-  mvwaddnstr(MyScr, StatusY, StatusX  - 2, Sym, 1);
+  if (FullRowClear)
+    mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'C');
 
-  mvwaddnstr(MyScr, StatusY, StatusX , MsgBuf, MsgLen);
+  mvwaddstr(MyScr, getmaxy(MyScr) - 1, getmaxx(MyScr) - strlen(MsgBuf) - 1, MsgBuf);
 }
 
 static int ShowScreen(void) {

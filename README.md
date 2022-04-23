@@ -19,9 +19,19 @@ ncurses(w)
 
 ## configurable prior to compile
 
-#define MAX_FIGURE_WEIGHT 8
+omnitype.h:
 
-#define MAX_GLASS_HEIGHT 256
+    #define MAX_FIGURE_WEIGHT 8
+
+    #define MAX_GLASS_HEIGHT 256
+
+omniplay.c:
+
+    #define GOAL_SYM ("+:=")
+
+    #define LOOSE_SYM '-'
+
+    #define WIN_SYM '#'
 
 
 ## gameplay
@@ -103,6 +113,23 @@ Sum of all figures' weights is >= (GlassWidth * GlassHeight) - (FillLevel * Fill
 
 Game ends if the figure was placed outside the glass (at least one of figure cubes is above the glass top) in any case. Or if additional goal (touch or flat) is achieved.
 
+You are being prompted about the current game goal and game status (game is over, additional goals reached) with the help of symbols used to draw the glass and 3 symbols, appearing in the left-bottom corner of the screen and meaning:
+
+G - gravity on\
+F - flat fun mode\
+C - full rows will be cleared
+
+Default settings for the glass symbols are:
+
+'+' - fill\
+':' - touch\
+'=' - flat\
+'-' - game is over\ 
+'#' - success
+
+You can change the defaults defined in omniplay.c according to Your taste before compiling.
+
+
 ## Score
 
 Depends on goal.
@@ -113,9 +140,8 @@ Depends on goal.
 
 - Flat. Number of figure, which made the top row flat.
 
-Score is the less, the better.
+Score is the less, the better. An estimated game score according to the current game settings is present in the right-bottom corner of the screen.
 
-Short status is present in the right-bottom corner of the screen. '+' means that game goal is reached. '-' means that game is over - some blocks were placed above the glass top. Number represents estimated game score according to game settings.
 
 ## Controls
 
@@ -137,6 +163,7 @@ $ - go to last modified figure
 
 q - exit without save\
 x - exit with save
+
 
 ## Format of .mino record file
 
@@ -169,6 +196,7 @@ All data are in decimal representation.
 The name of game record file is md5sum of its content.\
 If file name is not equal to md5sum of its content, it is considered as preset for new game.\
 For preset files parameters may be commented, without any delimiters. Only the first word is interpreted as data, the rest of line is ignored.
+
 
 ### minos.lua utility
 

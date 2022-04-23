@@ -9,8 +9,6 @@
 
 #include "omnitype.h"
 
-static struct Omnimino *GG;
-
 #include "omnimino.def"
 
 /**************************************
@@ -42,28 +40,19 @@ static void StoreUnsigned(unsigned int V, int Delim) {
   Adjust(snprintf(StorePtr, StoreFree, "%u%c", V, (char)Delim));
 }
 
-static void StoreBlockAddr(struct Coord *V, int Delim) {
-  Adjust(snprintf(StorePtr, StoreFree, "%u%c", (int)(V - Block), (char)Delim));
-}
-
-static void StorePointer(struct Coord **V, int Delim) {
-  Adjust(snprintf(StorePtr, StoreFree, "%u%c", (int)(V - Figure), (char)Delim));
-}
-
 static void StoreString(char *S) {
   Adjust(snprintf(StorePtr, StoreFree, "%s\n", S));
 }
 
 
-void SaveGame(struct Omnimino *G){
-  unsigned int *UPtr = (unsigned int *) (&(G->P));
+void SaveGame(struct Omnimino *GG){
+  unsigned int *UPtr = (unsigned int *) (&(GG->P));
   unsigned int i; 
   int Used;
   char *UserName;
 
   int fd;
 
-  GG = G;
 
   StorePtr = (char *) GlassRow;
   StoreFree = StoreBufSize;
@@ -73,8 +62,8 @@ void SaveGame(struct Omnimino *G){
     StoreUnsigned(*UPtr, '\n');
 
   StoreString(ParentName);
-  StorePointer(LastFigure, '\n');
-  StorePointer(NextFigure, '\n');
+  StoreInt((int)(LastFigure - Figure), '\n');
+  StoreInt((int)(NextFigure - Figure), '\n');
 
   for (i = 0; i < FillLevel; i++)
     StoreUnsigned(FillBuf[i], ';');
@@ -83,7 +72,7 @@ void SaveGame(struct Omnimino *G){
   struct Coord **F;
 
   for(F = Figure; F <= LastFigure; F++)
-    StoreBlockAddr(*F, ';');
+    StoreInt((int)(*F - Block), ';');
   StoreString("");
 
   struct Coord *B;

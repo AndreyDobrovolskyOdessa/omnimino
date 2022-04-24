@@ -100,7 +100,7 @@ static void DrawGlass(int GlassRowN) {
 
 
 static int SelectGlassRow(void) {
-  int FCV = Center((CurFigure < LastFigure) ? CurFigure : (CurFigure - 1), FindBottom, FindTop) >> 1;
+  int FCV = Center(CurFigure, FindBottom, FindTop) >> 1;
   unsigned int GlassRowN = FCV + (FigureSize / 2) + 1;
 
   if (GlassLevel > GlassRowN){
@@ -144,11 +144,11 @@ static void DrawQueue(void) {
     int OffsetY = OffsetYInit;
 
     for (y = 0; (N < LastFigure) && (y < PlacesV); y++, OffsetY -= TwiSide, N++){
-      CopyFigure(LastFigure, N);
-      Normalize(LastFigure, &C);
-      ForEachIn(LastFigure, AddX, OffsetX);
-      ForEachIn(LastFigure, AddY, OffsetY); 
-      ForEachIn(LastFigure, DrawBlock, 0);
+      CopyFigure(FigureBuf, N);
+      Normalize(FigureBuf, &C);
+      ForEachIn(FigureBuf, AddX, OffsetX);
+      ForEachIn(FigureBuf, AddY, OffsetY); 
+      ForEachIn(FigureBuf, DrawBlock, 0);
     }
   }
 }
@@ -184,8 +184,7 @@ static int ShowScreen(void) {
       int GlassRowN = SelectGlassRow();
 
       DrawGlass(GlassRowN);
-      if (CurFigure < LastFigure)
-        ForEachIn(CurFigure, DrawBlock, GlassRowN);
+      ForEachIn(CurFigure, DrawBlock, GlassRowN);
       DrawQueue();
       DrawStatus();
     }
@@ -217,14 +216,14 @@ static void Attempt(bfunc F, int V) {
   if (!GameOver) {
     struct Coord C;
 
-    CopyFigure(LastFigure, CurFigure);
-    Normalize(LastFigure, &C);
-    ForEachIn(LastFigure, F, V);
-    ForEachIn(LastFigure, AddX, C.x);
-    ForEachIn(LastFigure, AddY, C.y);
-    if((ForEachIn(LastFigure,FitGlass,0)==0)&&
-       ((!FlatFun) || (ForEachIn(LastFigure,AndGlass,0)==0))){
-      CopyFigure(CurFigure,LastFigure);
+    CopyFigure(FigureBuf, CurFigure);
+    Normalize(FigureBuf, &C);
+    ForEachIn(FigureBuf, F, V);
+    ForEachIn(FigureBuf, AddX, C.x);
+    ForEachIn(FigureBuf, AddY, C.y);
+    if((ForEachIn(FigureBuf,FitGlass,0)==0)&&
+       ((!FlatFun) || (ForEachIn(FigureBuf,AndGlass,0)==0))){
+      CopyFigure(CurFigure,FigureBuf);
       LastTouched = CurFigure;
       GameModified=1;
     }

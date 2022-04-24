@@ -80,7 +80,7 @@ static int ReallyAllocateBuffers(void) {
 
   /* FillBuf, BlockN, Block, GlassRow = StoreBuf */
 
-  unsigned int MaxFigure = TotalArea / WeightMin + 3;
+  unsigned int MaxFigure = TotalArea / WeightMin + 4;
   unsigned int MaxBlock = TotalArea + 2 * MAX_FIGURE_SIZE;
 
   size_t FillBufSize = FillLevel * sizeof(int);

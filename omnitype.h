@@ -67,6 +67,7 @@ struct OmniData {
 struct OmniVars {
   struct Coord **CurFigure;
   struct Coord **LastTouched; /* latest modified */
+  struct Coord **FigureBuf;
   unsigned int GameType;
   unsigned int GlassHeight; /* can change during game if FullRowClear */
   unsigned int GlassLevel; /* lowest free line */

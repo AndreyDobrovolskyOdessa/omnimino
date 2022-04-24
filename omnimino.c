@@ -103,7 +103,7 @@ static void ClearFullRows(unsigned int From, unsigned int To) {
     for(; r < GlassSize ; r++, w++)
       GlassRow[w] = GlassRow[r];
 */
-    memmove(GlassRow + w, GlassRow + r, (GlassSize -r) * sizeof(int));
+    memmove(GlassRow + w, GlassRow + r, (GlassSize - r) * sizeof(int));
 /*
     for(; w < GlassSize ; w++)
       GlassRow[w] = 0;
@@ -119,32 +119,32 @@ static void ClearFullRows(unsigned int From, unsigned int To) {
 static void Drop(struct Coord **FigN) {
   unsigned int Top, Bottom, y;
 
-  CopyFigure(LastFigure, FigN);
-  y = ForEachIn(LastFigure, FindBottom, INT_MAX) & (~1);
+  CopyFigure(FigureBuf, FigN);
+  y = ForEachIn(FigureBuf, FindBottom, INT_MAX) & (~1);
 
   if(Gravity){
     Bottom = y >> 1;
     if (FlatFun) {
       for (y = Bottom; y > 0; y--) {
-        ForEachIn(LastFigure, AddY, -2);
-        if (ForEachIn(LastFigure,AndGlass,0) != 0) {
-          ForEachIn(LastFigure, AddY, 2);
+        ForEachIn(FigureBuf, AddY, -2);
+        if (ForEachIn(FigureBuf,AndGlass,0) != 0) {
+          ForEachIn(FigureBuf, AddY, 2);
           break;
         }
       }
     } else {
-      ForEachIn(LastFigure,AddY,-y);
-      for (y = 0; (y < Bottom) && (ForEachIn(LastFigure, AndGlass, 0) != 0); y++) {
-        ForEachIn(LastFigure,AddY,2);
+      ForEachIn(FigureBuf, AddY, -y);
+      for (y = 0; (y < Bottom) && (ForEachIn(FigureBuf, AndGlass, 0) != 0); y++) {
+        ForEachIn(FigureBuf,AddY,2);
       }
     }
   } else {
     y >>= 1;
   }
 
-  ForEachIn(LastFigure,PlaceIntoGlass,0);
-  EmptyCells -= ForEachIn(LastFigure, CountInner, 0);
-  Top = (ForEachIn(LastFigure, FindTop, INT_MIN) >> 1) + 1;
+  ForEachIn(FigureBuf,PlaceIntoGlass,0);
+  EmptyCells -= ForEachIn(FigureBuf, CountInner, 0);
+  Top = (ForEachIn(FigureBuf, FindTop, INT_MIN) >> 1) + 1;
   if (Top > GlassLevel)
     GlassLevel = Top;
   if (FullRowClear)
@@ -165,7 +165,7 @@ static void Deploy(struct Coord **F) {
 static void CheckGameState(void) {
   switch(Goal){
     case TOUCH_GOAL:
-      if ((ForEachIn(LastFigure, FindBottom, INT_MAX) >> 1) == 0)
+      if ((ForEachIn(FigureBuf, FindBottom, INT_MAX) >> 1) == 0)
         GoalReached = 1;
       break;
     case FLAT_GOAL:
@@ -197,6 +197,8 @@ static void RewindGlassState(void) {
   EmptyCells = TotalArea;
   GlassLevel = FillRatio ? FillLevel : 0;
   CurFigure = Figure;
+  FigureBuf = LastFigure + 1;
+  *FigureBuf = *LastFigure;
   GameOver = 0;
   GoalReached = 0;
 }
@@ -221,8 +223,7 @@ void GetGlassState(struct Omnimino *G) {
   }
 
   if(CurFigure > LastTouched){
-    if(CurFigure < LastFigure)
-      Deploy(CurFigure);
+    Deploy(CurFigure);
     LastTouched = CurFigure;
   }
 

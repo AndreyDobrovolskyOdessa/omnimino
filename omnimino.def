@@ -26,6 +26,7 @@
 
 #define CurFigure    (GG->V.CurFigure)
 #define LastTouched  (GG->V.LastTouched)
+#define FigureBuf    (GG->V.FigureBuf)
 #define GameType     (GG->V.GameType)
 #define GlassHeight  (GG->V.GlassHeight)
 #define GlassLevel   (GG->V.GlassLevel)

@@ -123,7 +123,7 @@ Default settings for the glass symbols are:
 '+' - fill\
 ':' - touch\
 '=' - flat\
-'-' - game is over\ 
+'-' - game is over\
 '#' - success
 
 You can change the defaults defined in omniplay.c according to Your taste before compiling.
@@ -161,7 +161,7 @@ r - redo move\
 $ - go to last modified figure
 
 n - skip foward\
-N - skip backward
+N,p - skip backward
 
 q - exit without save\
 x - exit with save

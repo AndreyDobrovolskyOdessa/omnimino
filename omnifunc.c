@@ -93,7 +93,7 @@ struct Coord *CopyFigure(struct Coord **Dst, struct Coord **Src) {
 
   if((*Dst) > (*Src))
     Dst[1]  = Dst[0] + Len;
-  memcpy(*Dst, *Src, Len * sizeof(struct Coord));
+  memmove(*Dst, *Src, Len * sizeof(struct Coord));
 
   return *Dst;
 }

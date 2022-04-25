@@ -157,13 +157,16 @@ static void DrawQueue(void) {
 
 static void DrawStatus(void) {
   if (Gravity)
-    mvwaddch(MyScr, getmaxy(MyScr) - 3, 0, 'G');
+    mvwaddch(MyScr, getmaxy(MyScr) - 4, 0, 'G');
 
   if (FlatFun)
-    mvwaddch(MyScr, getmaxy(MyScr) - 2, 0, 'F');
+    mvwaddch(MyScr, getmaxy(MyScr) - 3, 0, 'F');
 
   if (FullRowClear)
-    mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'C');
+    mvwaddch(MyScr, getmaxy(MyScr) - 2, 0, 'C');
+
+  if (SlotsUnique)
+    mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'O');
 
   mvwaddstr(MyScr, getmaxy(MyScr) - 1, getmaxx(MyScr) - strlen(MsgBuf) - 1, MsgBuf);
 }
@@ -282,6 +285,36 @@ static void Rewind(void) {
   NextFigure = Figure;
 }
 
+static void SkipForward(void) {
+  struct Coord **F;
+
+  if (!SlotsUnique) {
+    CopyFigure(FigureBuf, CurFigure);
+    memmove(CurFigure[0], CurFigure[1], (LastFigure[0] - CurFigure[1]) * sizeof(struct Coord));
+    for (F = CurFigure + 1; F < LastFigure; F++)
+      F[0] = F[-1] + (F[1] - F[0]);
+    CopyFigure(LastFigure - 1, FigureBuf);
+
+    LastTouched = CurFigure - 1;
+  }
+}
+
+static void SkipBackward(void) {
+  struct Coord **F;
+
+  if (!SlotsUnique) {
+    CopyFigure(FigureBuf, LastFigure - 1);
+    for (F = LastFigure - 1; F > CurFigure; F--)
+      F[0] = F[1] - (F[0] - F[-1]);
+    memmove(CurFigure[1], CurFigure[0], (LastFigure[0] - CurFigure[1]) * sizeof(struct Coord));
+    CopyFigure(CurFigure, FigureBuf);
+
+    LastTouched = CurFigure - 1;
+  }
+}
+
+
+
 static void LastPlayed(void) {
   NextFigure = LastTouched;
 }
@@ -310,6 +343,10 @@ static struct KBinding {
 
   {'u', UndoFigure},
   {'r', RedoFigure},
+
+  {'n', SkipForward},
+  {'N', SkipBackward},
+  {'p', SkipBackward},
 
   {KEY_RESIZE, DeleteMyScr},
 

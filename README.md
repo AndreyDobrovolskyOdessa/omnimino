@@ -36,7 +36,7 @@ omniplay.c:
 
 ## gameplay
 
-Random sequence of figures is placed inside rectangular glass, using movements, rotations and mirror (vertical).
+Random sequence of figures is placed inside rectangular glass, using movements, rotations, mirror (vertical) and circlar shifts of the figures' queue (if enabled).
 
 Figure is a set of blocks with fixed ralative placement. Number of blocks in each figure can vary from FigureWeightMax down to FigureWeightMin (these are game parameters, defined in game record file).
 
@@ -80,11 +80,11 @@ FigureWeightMin (1-FigureWeightMax)
 Gameplay options:
 
 
-Gravity (0-1)\
-SingleLayer (0-1)\
-FullRowClear (0-1)\
-Goal (0-2)
-
+Gravity (0, 1)\
+SingleLayer (0, 1)\
+FullRowClear (0, 1)\
+Goal (0 - 2)\
+OrderFixed (0, 1)
 
 Goal may be:
 
@@ -103,8 +103,6 @@ GlassFillLevel\
 GlassFillRatio (number of blocks in each prefilled row)
 
 
-Additional parameter SlotsUnique influences the figure generation in case Aperture=0 only.
-
 
 The set of 13 parameters is used to create game record file. 
 
@@ -113,11 +111,12 @@ Sum of all figures' weights is >= (GlassWidth * GlassHeight) - (FillLevel * Fill
 
 Game ends if the figure was placed outside the glass (at least one of figure cubes is above the glass top) in any case. Or if additional goal (touch or flat) is achieved.
 
-You are being prompted about the current game goal and game status (game is over, additional goals reached) with the help of symbols used to draw the glass and 3 symbols, appearing in the left-bottom corner of the screen and meaning:
+You are being prompted about the current game goal and game status (game is over, additional goals reached) with the help of symbols used to draw the glass and 4 symbols, appearing in the left-bottom corner of the screen and meaning:
 
 G - gravity on\
 F - flat fun mode\
-C - full rows will be cleared
+C - full rows will be cleared\
+O - figures' order is fixed
 
 Default settings for the glass symbols are:
 
@@ -161,6 +160,9 @@ r - redo move\
 ^ - go to first figure\
 $ - go to last modified figure
 
+n - skip foward\
+N - skip backward
+
 q - exit without save\
 x - exit with save
 
@@ -181,7 +183,7 @@ Line No    Parameter or data
 10         GlassHeight\
 11         FillLevel\
 12         FillRatio\
-13         SlotsUnique\
+13         OrderFixed\
 14         ParentName\
 15         Figure number\
 16         Current figure\

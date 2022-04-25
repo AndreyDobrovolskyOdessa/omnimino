@@ -47,7 +47,7 @@ int CheckParameters(struct Omnimino *G){
     } else if (FillRatio >= GlassWidth){
       snprintf(MsgBuf, OM_STRLEN, "[12] FillRatio (%d) >= [9] GlassWidth (%d)", FillRatio, GlassWidth);
     } else if (SlotsUnique > 1){
-      snprintf(MsgBuf, OM_STRLEN, "[13] SlotsUnique (%d) can be 0 or 1", SlotsUnique);
+      snprintf(MsgBuf, OM_STRLEN, "[13] Ordered queue (%d) can be 0 or 1", SlotsUnique);
     } else {
       unsigned int i,Area = FigureSize;
 
@@ -176,7 +176,7 @@ static int SelectSlots(struct Coord *Slot, struct Coord *FBlock, int Weight) {
         Slot[SlotNum].x = x + (UseNeighbours ? FBlock[SeedCnt].x : 0);
         Slot[SlotNum].y = y + (UseNeighbours ? FBlock[SeedCnt].y : 0);
         if (((Weight >= (int)WeightMin) || (!FindBlock(Slot + SlotNum, FBlock, Weight))) &&
-           ((!SlotsUnique) || (!FindBlock(Slot + SlotNum, Slot, SlotNum))))
+           (/* (!SlotsUnique) || */(!FindBlock(Slot + SlotNum, Slot, SlotNum))))
           SlotNum++;
       }
     }

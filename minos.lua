@@ -228,7 +228,12 @@ local ShowSortedBranches = function(SBranch)
   end
 
 
-  io.stderr:write("\n    Weight  A  M  Goal G  S  C   Glass   Fill  SU   Scores\n\n")
+  io.stderr:write("\n")
+  io.stderr:write("       Metric  Gravity  FlatFun      OrderFixed\n")
+  io.stderr:write("             \\     \\   /                  |\n")
+  io.stderr:write("   Aperture  |      \\  |  ClearFullRows   |\n")
+  io.stderr:write("           \\ |       \\ | /                |\n")
+  io.stderr:write("    Weight A M  Goal G F C  Glass   Fill  O  Scores\n\n")
 
   for i, Br in ipairs(SBranch) do
 
@@ -239,18 +244,18 @@ local ShowSortedBranches = function(SBranch)
     if Br.Parms[1] ~= 3 then
       Exhibit{{2,4}}
       io.stderr:write(">=")
-      Exhibit{{14, 1}, {4, 4}, {5, 3}, {3, 4}, {6, 4}, {7, 3}, {8, 3}, {9, 5}}
+      Exhibit{{14, 1}, {4, 3}, {5, 2}, {3, 4}, {6, 4}, {7, 2}, {8, 2}, {9, 4}}
       io.stderr:write("*")
       Exhibit{{10, -3}, {11, 4}}
       io.stderr:write("*")
-      Exhibit{{12, -4}, {13,-3}}
+      Exhibit{{12, -3}, {13,-3}}
     end
 
     table.sort(Br,CompareData)
 
     for j, k in ipairs(Br) do
       if k[4] then
-        io.stderr:write(" ", k[4])
+        io.stderr:write(k[4], " ")
       end
     end
     io.stderr:write("\n")
@@ -260,11 +265,11 @@ end
 
 local ShowSortedGames = function(B)
 
-  io.stderr:write("\n      Score            Date               Player\n\n")
+  io.stderr:write("\n    Score          Date         Player\n\n")
   for i = 1, #B do
     io.stderr:write(string.format("%2d",i))
     io.stderr:write(string.format("%7s",B[i][4]))
-    io.stderr:write(string.format("%30s",os.date("%c",B[i][3])))
+    io.stderr:write(string.format("%20s",os.date("%y-%m-%d %H:%M:%S",B[i][3])))
     io.stderr:write(string.format("   %s",B[i][2]))
     io.stderr:write("\n")
   end

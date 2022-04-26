@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 
 #include <ncurses.h>
@@ -25,6 +24,7 @@ static struct Omnimino *GG;
 #define GOAL_SYM  ("+:=")
 #define LOOSE_SYM '-'
 #define WIN_SYM   '#'
+#define BELOW_SYM '.'
 
 
 /**************************************
@@ -77,9 +77,12 @@ static void PutRowImage(unsigned int Row, char *Image, int N) {
 static void DrawGlass(int GlassRowN) {
   int RowN;
   char RowImage[MAX_ROW_LEN];
+  int RowWidth = (GlassWidth + 2) * 2;
+  int Visible;
 
-  GlassRowN -= (getmaxy(MyScr) - 1);
-  for (RowN = getmaxy(MyScr) - 1; RowN >= 0; RowN--, GlassRowN++) {
+  Visible = (getmaxy(MyScr) * getmaxy(MyScr)) / GlassRowN;
+
+  for (RowN = 0; RowN < getmaxy(MyScr); RowN++, GlassRowN--) {
     int Sym;
 
     if (GlassRowN >= (int)GlassHeight)
@@ -91,10 +94,12 @@ static void DrawGlass(int GlassRowN) {
     else
       Sym = WIN_SYM;
 
-    memset(RowImage, Sym, MAX_ROW_LEN);
-    if ((GlassRowN >= 0) && (GlassRowN < (int)(GlassHeight + FigureSize +1)))
+    memset(RowImage, Sym, RowWidth);
+    if ((GlassRowN >= 0) && (GlassRowN < (int)FieldSize))
       PutRowImage(GlassRow[GlassRowN], RowImage+2, GlassWidth);
-    mvwaddnstr(MyScr, RowN, 0, RowImage, (GlassWidth + 2) * 2);
+    if (RowN >= Visible)
+      RowImage[RowWidth - 1] = BELOW_SYM;
+    mvwaddnstr(MyScr, RowN, 0, RowImage, RowWidth);
   }
 }
 
@@ -132,7 +137,7 @@ static void DrawQueue(void) {
   int TwiSide = SideLen * 2;
   int LeftMargin = (GlassWidth + 2) * 2;
   int PlacesH = (getmaxx(MyScr) - LeftMargin) / TwiSide;
-  int PlacesV = getmaxy(MyScr) / SideLen;
+  int PlacesV = (getmaxy(MyScr) - 1) / SideLen;
 
   struct Coord **N = CurFigure + 1;
 
@@ -168,7 +173,7 @@ static void DrawStatus(void) {
   if (SlotsUnique)
     mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'O');
 
-  mvwaddstr(MyScr, getmaxy(MyScr) - 1, getmaxx(MyScr) - strlen(MsgBuf) - 1, MsgBuf);
+  mvwprintw(MyScr, getmaxy(MyScr) - 1, getmaxx(MyScr) - 10, "%-5d%5d", EmptyCells, TotalArea - EmptyCells);
 }
 
 static int ShowScreen(void) {

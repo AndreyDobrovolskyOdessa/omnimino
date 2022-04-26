@@ -70,6 +70,7 @@ struct OmniVars {
   struct Coord **FigureBuf;
   unsigned int GameType;
   unsigned int GlassHeight; /* can change during game if FullRowClear */
+  unsigned int FieldSize;   /* follows GlassHeight with FigureSize + 1 bias */
   unsigned int GlassLevel; /* lowest free line */
   unsigned int EmptyCells;
   int GameOver;

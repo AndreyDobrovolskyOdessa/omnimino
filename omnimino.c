@@ -23,7 +23,6 @@
  SOFTWARE.
 ******************************************************************************/
 
-#include <stdio.h>
 #include <string.h>
 #include <limits.h>
 
@@ -82,7 +81,6 @@ static void CountInner(struct Coord *B, int *Cnt){
 static void ClearFullRows(unsigned int From, unsigned int To) {
   unsigned int r, w, FullRowNum;
 
-  unsigned int GlassSize = GlassHeight + FigureSize + 1;
   unsigned int Upper = GlassLevel;
 
   if (Goal == FLAT_GOAL)
@@ -100,17 +98,14 @@ static void ClearFullRows(unsigned int From, unsigned int To) {
 
   if ((int)FullRowNum > 0) {
 /*
-    for(; r < GlassSize ; r++, w++)
+    for(; r < FieldSize ; r++, w++)
       GlassRow[w] = GlassRow[r];
 */
-    memmove(GlassRow + w, GlassRow + r, (GlassSize - r) * sizeof(int));
-/*
-    for(; w < GlassSize ; w++)
-      GlassRow[w] = 0;
-*/
-    memset(GlassRow + (GlassSize - FullRowNum), 0, FullRowNum * sizeof(int));
+
+    memmove(GlassRow + w, GlassRow + r, (FieldSize - r) * sizeof(int));
 
     GlassHeight -= FullRowNum;
+    FieldSize -= FullRowNum;
     GlassLevel -= FullRowNum;
   }
 }
@@ -183,15 +178,15 @@ static void CheckGameState(void) {
 
 
 static void RewindGlassState(void) {
-  unsigned int i, GlassSize;
+  unsigned int i;
 
   for (i=0; i < FillLevel; i++)
     GlassRow[i] = FillBuf[i];
 
   GlassHeight=GlassHeightBuf;
-  GlassSize = GlassHeight + FigureSize + 1;
+  FieldSize = GlassHeight + FigureSize + 1;
 
-  for (; i < GlassSize; i++)
+  for (; i < FieldSize; i++)
     GlassRow[i] = 0;
 
   EmptyCells = TotalArea;
@@ -226,8 +221,6 @@ void GetGlassState(struct Omnimino *G) {
     Deploy(CurFigure);
     LastTouched = CurFigure;
   }
-
-  snprintf(MsgBuf, OM_STRLEN, "%d", (Goal == FILL_GOAL) ? EmptyCells : (unsigned int)(CurFigure - Figure));
 }
 
 

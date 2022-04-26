@@ -13,11 +13,18 @@
 
 
 void Report(struct Omnimino *G) {
-  if (G->V.GameType == 1) {
-    if ((G->P.Goal != FILL_GOAL) && (!G->V.GoalReached))
-      snprintf(G->S.MsgBuf, OM_STRLEN,  "%d", (int)(G->D.LastFigure - G->M.Figure));
-  } else if (G->V.GameType == 2) {
-    G->S.MsgBuf[0] = '\0';
+  if (G->V.GameType != 3) {
+    int Score;
+    if ((G->V.GameType == 2) && (G->V.GameModified))
+      G->V.GameType = 1;
+    if (G->P.Goal == FILL_GOAL) {
+      Score = G->V.EmptyCells;
+    } else {
+      Score = G->C.TotalArea;
+      if (G->V.GoalReached)
+        Score -= G->V.EmptyCells;
+    }
+    snprintf(G->S.MsgBuf, OM_STRLEN,  "%d", Score);
   }
 
   if (isatty(fileno(stdout))) {

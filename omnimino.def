@@ -29,6 +29,7 @@
 #define FigureBuf    (GG->V.FigureBuf)
 #define GameType     (GG->V.GameType)
 #define GlassHeight  (GG->V.GlassHeight)
+#define FieldSize    (GG->V.FieldSize)
 #define GlassLevel   (GG->V.GlassLevel)
 #define EmptyCells   (GG->V.EmptyCells)
 #define GameOver     (GG->V.GameOver)

@@ -14,6 +14,8 @@ void ExportLua(struct Omnimino *GG, FILE *fout) {
   if ((GameType != 1) || (strcmp(ParentName, "none") == 0))
     strcpy(ParentName, GameName);
 
+  if (GameType == 2)
+    MsgBuf[0] = '\0';
 
   fprintf(fout,"{\n");
 

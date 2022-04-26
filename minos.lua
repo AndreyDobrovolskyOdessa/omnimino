@@ -150,7 +150,7 @@ local MakeKey = function(arg)
     Key[ArgPos] = tonumber(Arg)
   end
 
-  local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 13}}, {Quad, {3, 6, 7, 8}},
+  local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 14}}, {Quad, {3, 6, 7, 8}},
                    {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
 
   for i,D in ipairs(Decoder) do

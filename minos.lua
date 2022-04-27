@@ -227,13 +227,15 @@ local ShowSortedBranches = function(SBranch)
     return false
   end
 
+  io.stderr:write([[
 
-  io.stderr:write("\n")
-  io.stderr:write("       Metric  Gravity  FlatFun      OrderFixed\n")
-  io.stderr:write("             \\     \\   /                  |\n")
-  io.stderr:write("   Aperture  |      \\  |  ClearFullRows   |\n")
-  io.stderr:write("           \\ |       \\ | /                |\n")
-  io.stderr:write("    Weight A M  Goal G F C  Glass   Fill  O  Scores\n\n")
+       Metric  Gravity  FlatFun      OrderFixed
+             \     \   /                  |
+   Aperture  |      \  |  ClearFullRows   |
+           \ |       \ | /                |
+    Weight A M  Goal G F C  Glass   Fill  O  Scores
+
+]])
 
   for i, Br in ipairs(SBranch) do
 

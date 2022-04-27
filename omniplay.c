@@ -137,7 +137,7 @@ static void DrawQueue(void) {
   int TwiSide = SideLen * 2;
   int LeftMargin = (GlassWidth + 2) * 2;
   int PlacesH = (getmaxx(MyScr) - LeftMargin) / TwiSide;
-  int PlacesV = (getmaxy(MyScr) - 1) / SideLen;
+  int PlacesV = getmaxy(MyScr) / SideLen;
 
   struct Coord **N = CurFigure + 1;
 
@@ -158,9 +158,15 @@ static void DrawQueue(void) {
   }
 }
 
-
+#define SCORE_WIDTH 12
+#define SCORE_FORMAT "  %-5d%5d"
 
 static void DrawStatus(void) {
+  int ScoreX = getmaxx(MyScr) - SCORE_WIDTH;
+
+  mvwhline(MyScr, getmaxy(MyScr) - 2, ScoreX, ' ', SCORE_WIDTH);
+  mvwprintw(MyScr, getmaxy(MyScr) - 1, ScoreX, SCORE_FORMAT, EmptyCells, TotalArea - EmptyCells);
+
   if (Gravity)
     mvwaddch(MyScr, getmaxy(MyScr) - 4, 0, 'G');
 
@@ -172,8 +178,6 @@ static void DrawStatus(void) {
 
   if (SlotsUnique)
     mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'O');
-
-  mvwprintw(MyScr, getmaxy(MyScr) - 1, getmaxx(MyScr) - 10, "%-5d%5d", EmptyCells, TotalArea - EmptyCells);
 }
 
 static int ShowScreen(void) {
@@ -186,8 +190,10 @@ static int ShowScreen(void) {
 
     werase(MyScr);
 
-    if (((unsigned int)getmaxx(MyScr) < ((GlassWidth + 2) * 2)) || ((unsigned int)getmaxy(MyScr) < (MAX_FIGURE_SIZE * 2))){
-      mvwaddstr(MyScr, 0, 0, "Screen too small");
+    if ((getmaxx(MyScr) < SCORE_WIDTH) ||
+        (getmaxx(MyScr) < (int)((GlassWidth + 2) * 2)) ||
+        (getmaxy(MyScr) < (int)((FigureSize * 2) + 2))){
+      mvwaddstr(MyScr, 0, 0, "small");
     } else {
       int GlassRowN = SelectGlassRow();
 

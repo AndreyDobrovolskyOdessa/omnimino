@@ -15,8 +15,8 @@ $1 -	game type, one of "g[ame]", "p[reset]", "e[rror]" or "x" (any)
 $2 -	string of up to 4 decimal digits, describing correspondingly:
 	FigureWeightMax, Apperture, Metrics and FigureWeightMin
 
-$3 -	string of up to 4 decimal digits, describing correspondingly:
-	Goal, Gravity, SingleLayer and FullRowClear options
+$3 -	string of up to 5 decimal digits, describing correspondingly:
+	Goal, Gravity, SingleLayer, FullRowClear and OrderFixed options
 
 $4 -	GlassWidth
 
@@ -141,8 +141,8 @@ local MakeKey = function(arg)
   end
 
   local Quad = function(Arg, ArgPos)
-    for i=1,4 do
-      Key[ArgPos[i]] = tonumber(string.sub(Arg,i,i))
+    for i,Pos in ipairs(ArgPos) do
+      Key[Pos] = tonumber(string.sub(Arg,i,i))
     end
   end
 
@@ -150,7 +150,7 @@ local MakeKey = function(arg)
     Key[ArgPos] = tonumber(Arg)
   end
 
-  local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 14}}, {Quad, {3, 6, 7, 8}},
+  local Decoder = {{SelectGameType, 1}, {Quad, {2, 4, 5, 14}}, {Quad, {3, 6, 7, 8, 13}},
                    {Single, 9}, {Single, 10 }, {Single, 11}, {Single, 12}}
 
   for i,D in ipairs(Decoder) do

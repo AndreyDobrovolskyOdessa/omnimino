@@ -235,8 +235,7 @@ static void Attempt(bfunc F, int V) {
     ForEachIn(FigureBuf, F, V);
     ForEachIn(FigureBuf, AddX, C.x);
     ForEachIn(FigureBuf, AddY, C.y);
-    if((ForEachIn(FigureBuf,FitGlass,0)==0)&&
-       ((!FlatFun) || (ForEachIn(FigureBuf,AndGlass,0)==0))){
+    if(FitsGlass(FigureBuf) && ((!FlatFun) || (!Overlaps(FigureBuf)))){
       CopyFigure(CurFigure,FigureBuf);
       LastTouched = CurFigure;
       GameModified=1;
@@ -275,9 +274,7 @@ static void MirrorCurVert(void){
 }
 
 static void DropCur(void){
-  if((!GameOver)&&
-     (ForEachIn(CurFigure,FitGlass,0)==0)&&
-     (ForEachIn(CurFigure,AndGlass,0)==0)){
+  if((!GameOver) && Placeable(CurFigure)) {
     NextFigure=CurFigure+1;
   }
 }

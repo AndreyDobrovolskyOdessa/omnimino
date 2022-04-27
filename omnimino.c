@@ -27,7 +27,7 @@
 #include <limits.h>
 
 #include "omnifunc.h"
-
+#include "omnimino.h"
 
 /**************************************
 
@@ -45,11 +45,11 @@ void InitGame(struct Omnimino *G) {
 }
 
 static void FitWidth(struct Coord *B, int *Err){
-  (*Err) = (*Err) || ( (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth) );
+  (*Err) = (*Err) || (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth);
 }
 
 static void FitHeight(struct Coord *B, int *Err){
-  (*Err) = (*Err) || ( (((B->y)>>1) < 0) || (((B->y)>>1) >= (int)(GlassHeight+FigureSize+1)) );
+  (*Err) = (*Err) || (((B->y)>>1) < 0) || (((B->y)>>1) >= (int)FieldSize);
 }
 
 void FitGlass(struct Coord *B, int *Err){
@@ -122,14 +122,14 @@ static void Drop(struct Coord **FigN) {
     if (FlatFun) {
       for (y = Bottom; y > 0; y--) {
         ForEachIn(FigureBuf, AddY, -2);
-        if (ForEachIn(FigureBuf,AndGlass,0) != 0) {
+        if (Overlaps(FigureBuf)) {
           ForEachIn(FigureBuf, AddY, 2);
           break;
         }
       }
     } else {
       ForEachIn(FigureBuf, AddY, -y);
-      for (y = 0; (y < Bottom) && (ForEachIn(FigureBuf, AndGlass, 0) != 0); y++) {
+      for (y = 0; (y < Bottom) && Overlaps(FigureBuf); y++) {
         ForEachIn(FigureBuf,AddY,2);
       }
     }
@@ -206,7 +206,7 @@ void GetGlassState(struct Omnimino *G) {
     RewindGlassState();
 
   while (CurFigure < NextFigure) {
-    if ((ForEachIn(CurFigure, FitGlass, 0) != 0) || (ForEachIn(CurFigure, AndGlass, 0) != 0)) {
+    if (!Placeable(CurFigure)) {
       NextFigure = CurFigure;
       LastTouched = CurFigure - 1;
       break;

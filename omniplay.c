@@ -80,7 +80,7 @@ static void DrawGlass(int GlassRowN) {
   int RowWidth = (GlassWidth + 2) * 2;
   int Visible;
 
-  Visible = (getmaxy(MyScr) * getmaxy(MyScr)) / GlassRowN;
+  Visible = (getmaxy(MyScr) * getmaxy(MyScr)) / (GlassRowN + 1);
 
   for (RowN = 0; RowN < getmaxy(MyScr); RowN++, GlassRowN--) {
     int Sym;

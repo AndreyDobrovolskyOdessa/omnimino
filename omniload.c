@@ -294,8 +294,6 @@ static int DoLoad(char *BufAddr, size_t BufLen) {
   if ((ReadParameters() != 0) || (CheckParameters(GG) != 0))
     return 1;
 
-  LastFigure = Figure; /* mark missing game data */
-
   if (strcmp(BufName, GameName) != 0) {
     GameType = 2;
     return 0;
@@ -321,10 +319,9 @@ int LoadGame(struct Omnimino *G, char *Name) {
   MsgBuf[0] = '\0';
   PlayerName[0] = '\0';
   TimeStamp = 0;
-
   GameType = 3;
-
   GameModified=0;
+  LastFigure = Figure; /* mark missing game data */
 
   if (stat(Name, &st) < 0) {
     snprintf(MsgBuf, OM_STRLEN, "Can not stat file %s.", Name);

@@ -13,13 +13,9 @@
 
 
 void Report(struct Omnimino *G) {
-  if ((G->V.GameType != 3) && (G->D.LastFigure != G->M.Figure)) { /* game data present */
-    int Score;
-    if ((G->V.GameType == 2) && (G->V.GameModified))
-      G->V.GameType = 1;
-    if (G->P.Goal == FILL_GOAL) {
-      Score = G->V.EmptyCells;
-    } else {
+  if (G->D.LastFigure != G->M.Figure) { /* game data present */
+    int Score = G->V.EmptyCells;
+    if (G->P.Goal != FILL_GOAL) {
       Score = G->C.TotalArea;
       if (G->V.GoalReached)
         Score -= G->V.EmptyCells;
@@ -64,16 +60,14 @@ int main(int argc,char *argv[]){
         fprintf(stdout, USAGE);
       }
     } else {
-      while (!feof(stdin)) {
-        if (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
-          if (LoadGame(&Game, FName) == 0) {
-            if (Game.V.GameType == 1) {
-              Game.V.CurFigure = Game.D.NextFigure + 1;
-              GetGlassState(&Game);
-            }
+      while (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
+        if (LoadGame(&Game, FName) == 0) {
+          if (Game.V.GameType == 1) {
+            Game.V.CurFigure = Game.D.NextFigure + 1;
+            GetGlassState(&Game);
           }
-          Report(&Game);
         }
+        Report(&Game);
       }
     }
   }

@@ -233,7 +233,7 @@ local ShowSortedBranches = function(SBranch)
              \     \   /                  |
    Aperture  |      \  |  ClearFullRows   |
            \ |       \ | /                |
-    Weight A M  Goal G F C  Glass   Fill  O  Scores
+    Weight A M  Goal G F C  Glass   Fill  O   Scores
 
 ]])
 
@@ -257,7 +257,7 @@ local ShowSortedBranches = function(SBranch)
 
     for j, k in ipairs(Br) do
       if k[4] then
-        io.stderr:write(k[4], " ")
+        io.stderr:write(" ", k[4])
       end
     end
     io.stderr:write("\n")

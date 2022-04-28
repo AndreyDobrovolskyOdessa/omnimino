@@ -13,7 +13,7 @@
 
 
 void Report(struct Omnimino *G) {
-  if (G->V.GameType != 3) {
+  if ((G->V.GameType != 3) && (G->D.LastFigure != G->M.Figure)) { /* game data present */
     int Score;
     if ((G->V.GameType == 2) && (G->V.GameModified))
       G->V.GameType = 1;
@@ -70,7 +70,7 @@ int main(int argc,char *argv[]){
             if (Game.V.GameType == 1) {
               Game.V.CurFigure = Game.D.NextFigure + 1;
               GetGlassState(&Game);
-              }
+            }
           }
           Report(&Game);
         }

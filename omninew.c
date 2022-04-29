@@ -107,20 +107,21 @@ static int ReallyAllocateBuffers(void) {
   size_t NewGameBufSize = FillBufSize + FigureBufSize + BlockBufSize + StoreBufSize;
 
   if (FillBuf == NULL) {
-    GameBufSize = NewGameBufSize;
-    FillBuf = malloc(GameBufSize);
+    FillBuf = malloc(NewGameBufSize);
     if (FillBuf == NULL) {
-      snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %ld byte buffer.", (long)GameBufSize);
+      snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %ld byte buffer.", (long)NewGameBufSize);
       return 1;
     }
+    GameBufSize = NewGameBufSize;
   } else {
     if (NewGameBufSize > GameBufSize) {
-      GameBufSize = NewGameBufSize;
-      FillBuf = realloc(FillBuf, GameBufSize);
-      if (FillBuf == NULL) {
-        snprintf(MsgBuf, OM_STRLEN, "Failed to reallocate %ld byte buffer.", (long)GameBufSize);
+      void *NewFillBuf = realloc(FillBuf, NewGameBufSize);
+      if (NewFillBuf == NULL) {
+        snprintf(MsgBuf, OM_STRLEN, "Failed to reallocate %ld byte buffer.", (long)NewGameBufSize);
         return 1;
       }
+      FillBuf = NewFillBuf;
+      GameBufSize = NewGameBufSize;
     }
   }
 

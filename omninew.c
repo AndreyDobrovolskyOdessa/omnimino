@@ -10,6 +10,11 @@ static struct Omnimino *GG;
 #include "omnimino.def"
 
 
+void InitGame(struct Omnimino *G) {
+  memset(G, 0, sizeof(struct Omnimino)); /*   GameBufSize = 0;  */
+}
+
+
 int CheckParameters(struct Omnimino *G){
   GG = G;
 
@@ -106,7 +111,7 @@ static int ReallyAllocateBuffers(void) {
 
   size_t NewGameBufSize = FillBufSize + FigureBufSize + BlockBufSize + StoreBufSize;
 
-  if (FillBuf == NULL) {
+  if (GameBufSize == 0) {
     FillBuf = malloc(NewGameBufSize);
     if (FillBuf == NULL) {
       snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %ld byte buffer.", (long)NewGameBufSize);

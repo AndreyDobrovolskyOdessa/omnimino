@@ -40,10 +40,6 @@ static struct Omnimino *GG;
 #include "omnimino.def"
 
 
-void InitGame(struct Omnimino *G) {
-  memset(G, 0, sizeof(struct Omnimino));
-}
-
 static void FitWidth(struct Coord *B, int *Err){
   (*Err) = (*Err) || (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth);
 }

@@ -5,6 +5,7 @@
 
 #include "omnitype.h"
 
+void InitGame(struct Omnimino *G);
 
 int CheckParameters(struct Omnimino *G);
 int AllocateBuffers(struct Omnimino *G);

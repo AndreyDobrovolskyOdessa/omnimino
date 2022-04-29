@@ -322,6 +322,7 @@ int LoadGame(struct Omnimino *G, char *Name) {
   GameType = 3;
   GameModified=0;
   LastFigure = Figure; /* mark missing game data */
+  strcpy(ParentName, "none");
 
   if (stat(Name, &st) < 0) {
     snprintf(MsgBuf, OM_STRLEN, "Can not stat file %s.", Name);

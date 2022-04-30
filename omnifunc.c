@@ -91,7 +91,7 @@ void Normalize(struct Coord **F,struct Coord *C){
 struct Coord *CopyFigure(struct Coord **Dst, struct Coord **Src) {
   int Len = Src[1] - Src[0];
 
-  if((*Dst) > (*Src))
+  if((*Dst) >= (*Src))
     Dst[1]  = Dst[0] + Len;
   memmove(*Dst, *Src, Len * sizeof(struct Coord));
 

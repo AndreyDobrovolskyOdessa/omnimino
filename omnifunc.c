@@ -39,6 +39,10 @@ void AddY(struct Coord *B,int *V){
   (B->y)+=(*V);
 }
 
+void AndX(struct Coord *B, int *Mask) {
+  B->x &= *Mask;
+}
+
 void NegX(struct Coord *B,int *V){
   (void) V;
   (B->x)=-(B->x);

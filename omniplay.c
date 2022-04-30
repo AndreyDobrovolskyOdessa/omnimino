@@ -134,11 +134,6 @@ static void DrawBlock(struct Coord *B, int *GRN) {
 }
 
 
-static void AndX(struct Coord *B, int *Mask) {
-  B->x &= *Mask;
-}
-
-
 static void DrawFigure(struct Coord **F, struct Coord *Buf, int OffsetX, int OffsetY) {
   CopyFigure(FigureBuf, F);
   if (Buf)

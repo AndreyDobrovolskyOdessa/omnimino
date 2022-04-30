@@ -12,6 +12,7 @@ void FindRight(struct Coord *B,int *V);
 void FindTop(struct Coord *B,int *V);
 void AddX(struct Coord *B,int *V);
 void AddY(struct Coord *B,int *V);
+void AndX(struct Coord *B,int *V);
 void NegX(struct Coord *B,int *V);
 void SwapXY(struct Coord *B,int *V);
 void RotCW(struct Coord *B,int *V);

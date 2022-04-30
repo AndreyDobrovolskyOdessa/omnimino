@@ -21,7 +21,7 @@ static struct Omnimino *GG;
            
 *******************************************************/
 
-#define GOAL_SYM  ("+:=")
+#define GOAL_SYM  (":;=")
 #define LOOSE_SYM '-'
 #define WIN_SYM   '#'
 #define BELOW_SYM '.'
@@ -64,7 +64,9 @@ static void StopCurses() {
 }
 
 
-#define MAX_ROW_LEN ((MAX_GLASS_WIDTH+2)*2)
+#define THICKNESS 4
+
+#define MAX_ROW_LEN ((MAX_GLASS_WIDTH + THICKNESS) * 2)
 
 static void PutRowImage(unsigned int Row, char *Image, int N) {
   for (;N--; Row >>= 1) {
@@ -77,7 +79,7 @@ static void PutRowImage(unsigned int Row, char *Image, int N) {
 static void DrawGlass(int GlassRowN) {
   int RowN;
   char RowImage[MAX_ROW_LEN];
-  int RowWidth = (GlassWidth + 2) * 2;
+  int RowWidth = (GlassWidth + THICKNESS) * 2;
   int Visible;
 
   Visible = (getmaxy(MyScr) * getmaxy(MyScr)) / (GlassRowN + 1);
@@ -96,7 +98,7 @@ static void DrawGlass(int GlassRowN) {
 
     memset(RowImage, Sym, RowWidth);
     if ((GlassRowN >= 0) && (GlassRowN < (int)FieldSize))
-      PutRowImage(GlassRow[GlassRowN], RowImage+2, GlassWidth);
+      PutRowImage(GlassRow[GlassRowN], RowImage+THICKNESS, GlassWidth);
     if (RowN >= Visible)
       RowImage[RowWidth - 1] = BELOW_SYM;
     mvwaddnstr(MyScr, RowN, 0, RowImage, RowWidth);
@@ -125,7 +127,7 @@ static int SelectGlassRow(void) {
 }
 
 static void DrawBlock(struct Coord *B,int *GRN) {
-  mvwchgat(MyScr, (*GRN) - ((B->y) >> 1) ,((B->x) & (~1)) + 2, 2, A_REVERSE, 0, NULL);
+  mvwchgat(MyScr, (*GRN) - ((B->y) >> 1), ((B->x) & (~1)), 2, A_REVERSE, 0, NULL);
 }
 
 
@@ -135,7 +137,7 @@ static void DrawQueue(void) {
 
   int SideLen = FigureSize + 2;
   int TwiSide = SideLen * 2;
-  int LeftMargin = (GlassWidth + 2) * 2;
+  int LeftMargin = (GlassWidth + THICKNESS) * 2;
   int PlacesH = (getmaxx(MyScr) - LeftMargin) / TwiSide;
   int PlacesV = getmaxy(MyScr) / SideLen;
 
@@ -180,6 +182,12 @@ static void DrawStatus(void) {
     mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'O');
 }
 
+void DrawCurFigure(int GlassRowN) {
+  CopyFigure(FigureBuf, CurFigure);
+  ForEachIn(FigureBuf, AddX, THICKNESS);
+  ForEachIn(FigureBuf, DrawBlock, GlassRowN);
+}
+
 static int ShowScreen(void) {
   if (Screen) {
     if (MyScr == NULL) {
@@ -191,14 +199,14 @@ static int ShowScreen(void) {
     werase(MyScr);
 
     if ((getmaxx(MyScr) < SCORE_WIDTH) ||
-        (getmaxx(MyScr) < (int)((GlassWidth + 2) * 2)) ||
+        (getmaxx(MyScr) < (int)((GlassWidth + THICKNESS) * 2)) ||
         (getmaxy(MyScr) < (int)((FigureSize * 2) + 2))){
       mvwaddstr(MyScr, 0, 0, "small");
     } else {
       int GlassRowN = SelectGlassRow();
 
       DrawGlass(GlassRowN);
-      ForEachIn(CurFigure, DrawBlock, GlassRowN);
+      DrawCurFigure(GlassRowN);
       DrawQueue();
       DrawStatus();
     }

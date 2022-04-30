@@ -49,12 +49,14 @@ static void StartCurses(void) {
   }
 }
 
+
 static void DeleteMyScr(void) {
   if (MyScr) {
     delwin(MyScr);
     MyScr = NULL;
   }
 }
+
 
 static void StopCurses() {
   if (Screen) {
@@ -126,12 +128,24 @@ static int SelectGlassRow(void) {
   return GlassRowN;
 }
 
+
 static void DrawBlock(struct Coord *B, int *GRN) {
   mvwchgat(MyScr, (*GRN) - ((B->y) >> 1), B->x, 2, A_REVERSE, 0, NULL);
 }
 
+
 static void AndX(struct Coord *B, int *Mask) {
   B->x &= *Mask;
+}
+
+
+static void DrawFigure(struct Coord **F, struct Coord *Buf, int OffsetX, int OffsetY) {
+  CopyFigure(FigureBuf, F);
+  if (Buf)
+    Normalize(FigureBuf, Buf);
+  ForEachIn(FigureBuf, AndX, ~1);
+  ForEachIn(FigureBuf, AddX, OffsetX);
+  ForEachIn(FigureBuf, DrawBlock, OffsetY);
 }
 
 
@@ -145,25 +159,21 @@ static void DrawQueue(void) {
   int PlacesH = (getmaxx(MyScr) - LeftMargin) / TwiSide;
   int PlacesV = getmaxy(MyScr) / SideLen;
 
-  struct Coord **N = CurFigure + 1;
+  struct Coord **F = CurFigure + 1;
 
   int OffsetX = LeftMargin + SideLen;
-  int OffsetYInit = -SideLen + 1;
+  int OffsetYInit = SideLen / 2;
 
-  for (x = 0; (N < LastFigure) && (x < PlacesH); x++, OffsetX += TwiSide) {
+  for (x = 0; (F < LastFigure) && (x < PlacesH); x++, OffsetX += TwiSide) {
 
     int OffsetY = OffsetYInit;
 
-    for (y = 0; (N < LastFigure) && (y < PlacesV); y++, OffsetY -= TwiSide, N++){
-      CopyFigure(FigureBuf, N);
-      Normalize(FigureBuf, &C);
-      ForEachIn(FigureBuf, AndX, ~1);
-      ForEachIn(FigureBuf, AddX, OffsetX);
-      ForEachIn(FigureBuf, AddY, OffsetY); 
-      ForEachIn(FigureBuf, DrawBlock, 0);
+    for (y = 0; (F < LastFigure) && (y < PlacesV); y++, OffsetY += SideLen, F++){
+      DrawFigure(F, &C, OffsetX, OffsetY);
     }
   }
 }
+
 
 #define SCORE_WIDTH 12
 #define SCORE_FORMAT "  %-5d%5d"
@@ -188,14 +198,6 @@ static void DrawStatus(void) {
 }
 
 
-static void DrawCurFigure(int GlassRowN) {
-  CopyFigure(FigureBuf, CurFigure);
-  ForEachIn(FigureBuf, AndX, ~1);
-  ForEachIn(FigureBuf, AddX, THICKNESS);
-  ForEachIn(FigureBuf, DrawBlock, GlassRowN);
-}
-
-
 static int ShowScreen(void) {
   if (Screen) {
     if (MyScr == NULL) {
@@ -214,7 +216,7 @@ static int ShowScreen(void) {
       int GlassRowN = SelectGlassRow();
 
       DrawGlass(GlassRowN);
-      DrawCurFigure(GlassRowN);
+      DrawFigure(CurFigure, NULL, THICKNESS, GlassRowN);
       DrawQueue();
       DrawStatus();
     }

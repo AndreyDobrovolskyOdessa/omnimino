@@ -26,6 +26,8 @@ static struct Omnimino *GG;
 #define WIN_SYM   '#'
 #define BELOW_SYM '.'
 
+#define THICKNESS 4
+
 
 /**************************************
 
@@ -63,8 +65,6 @@ static void StopCurses() {
   }
 }
 
-
-#define THICKNESS 4
 
 #define MAX_ROW_LEN ((MAX_GLASS_WIDTH + THICKNESS) * 2)
 
@@ -126,8 +126,12 @@ static int SelectGlassRow(void) {
   return GlassRowN;
 }
 
-static void DrawBlock(struct Coord *B,int *GRN) {
-  mvwchgat(MyScr, (*GRN) - ((B->y) >> 1), ((B->x) & (~1)), 2, A_REVERSE, 0, NULL);
+static void DrawBlock(struct Coord *B, int *GRN) {
+  mvwchgat(MyScr, (*GRN) - ((B->y) >> 1), B->x, 2, A_REVERSE, 0, NULL);
+}
+
+static void AndX(struct Coord *B, int *Mask) {
+  B->x &= *Mask;
 }
 
 
@@ -153,6 +157,7 @@ static void DrawQueue(void) {
     for (y = 0; (N < LastFigure) && (y < PlacesV); y++, OffsetY -= TwiSide, N++){
       CopyFigure(FigureBuf, N);
       Normalize(FigureBuf, &C);
+      ForEachIn(FigureBuf, AndX, ~1);
       ForEachIn(FigureBuf, AddX, OffsetX);
       ForEachIn(FigureBuf, AddY, OffsetY); 
       ForEachIn(FigureBuf, DrawBlock, 0);
@@ -182,11 +187,14 @@ static void DrawStatus(void) {
     mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'O');
 }
 
-void DrawCurFigure(int GlassRowN) {
+
+static void DrawCurFigure(int GlassRowN) {
   CopyFigure(FigureBuf, CurFigure);
+  ForEachIn(FigureBuf, AndX, ~1);
   ForEachIn(FigureBuf, AddX, THICKNESS);
   ForEachIn(FigureBuf, DrawBlock, GlassRowN);
 }
+
 
 static int ShowScreen(void) {
   if (Screen) {

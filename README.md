@@ -27,11 +27,13 @@ omnitype.h:
 
 omniplay.c:
 
-    #define GOAL_SYM ("+:=")
+    #define GOAL_SYM (":;=")
 
     #define LOOSE_SYM '-'
 
     #define WIN_SYM '#'
+
+    #define THICKNESS 4 /* glass walls */
 
 
 ## gameplay
@@ -120,8 +122,8 @@ O - figures' order is fixed
 
 Default settings for the glass symbols are:
 
-'+' - fill\
-':' - touch\
+':' - fill\
+';' - touch\
 '=' - flat\
 '-' - game is over\
 '#' - success
@@ -135,11 +137,9 @@ Depends on goal.
 
 - Fill. Number of empty cells in the glass
 
-- Touch. Number of figure, that touched the glass bottom
+- Touch or Flat. Number of cubes played
 
-- Flat. Number of figure, which made the top row flat.
-
-Score is the less, the better. An estimated game score according to the current game settings is present in the right-bottom corner of the screen.
+Score is the less, the better. Number of free cells and cubes played are displayed in the right-bottom corner of the screen.
 
 
 ## Controls

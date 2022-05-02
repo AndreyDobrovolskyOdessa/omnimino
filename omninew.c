@@ -154,14 +154,17 @@ int AllocateBuffers(struct Omnimino *G) {
 static void FillGlass(void){
   unsigned int i, Places, Blocks;
 
-  for (i = 0 ; i < FillLevel ; i++) {
-    FillBuf[i] = 0;
-    for (Places = GlassWidth, Blocks = FillRatio ; Places > 0 ; Places--) {
-      FillBuf[i] <<= 1;
-      if ((rand() % Places) < Blocks) {
-        FillBuf[i] |= 1; Blocks--;
+  if (FillRatio != 0) {
+    for (i = 0 ; i < FillLevel ; i++) {
+      FillBuf[i] = 0;
+      for (Places = GlassWidth, Blocks = FillRatio ; Places > 0 ; Places--) {
+        FillBuf[i] <<= 1;
+        if ((rand() % Places) < Blocks) {
+          FillBuf[i] |= 1; Blocks--;
+        }
       }
     }
+    TotalArea -= FillRatio * FillLevel;
   }
 }
 

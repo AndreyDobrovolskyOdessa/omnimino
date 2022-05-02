@@ -188,7 +188,7 @@ static void RewindGlassState(void) {
     GlassRow[i] = 0;
 
   EmptyCells = TotalArea;
-  GlassLevel = FillRatio ? FillLevel : 0;
+  GlassLevel = FillLevel;
   CurFigure = Figure;
   FigureBuf = LastFigure + 1;
   *FigureBuf = *LastFigure;

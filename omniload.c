@@ -104,17 +104,15 @@ static int ReadParameters(void) {
   return 0;
 }
 
-static int WrongUnits(unsigned int R){
+static unsigned int CountUnits(unsigned int R){
   unsigned int n;
-
-  if ((R & (~FullRow)) != 0)
-    return 1;
 
   for (n = 0; R; R >>= 1)
     n += R & 1;
 
-  return n != FillRatio;
+  return n;
 }
+
 
 static int ReadGlassFill(void) {
   unsigned int i;
@@ -123,6 +121,7 @@ static int ReadGlassFill(void) {
     if (ReadInt((int *)(FillBuf + i), ';') != 0) {
       snprintf(MsgBuf, OM_STRLEN, "[17] GlassRow[%d] load error.", i); return 1;
     }
+    FillBuf[i] &= FullRow;
   }
 
   return 0;
@@ -133,9 +132,12 @@ static int CheckGlassFill(void) {
   unsigned int i;
 
   for (i = 0; i < FillLevel; i++) {
-    if (WrongUnits(FillBuf[i])) {
-      snprintf(MsgBuf, OM_STRLEN, "[17] Wrong GlassRow[%d] = %d.", i, FillBuf[i]); return 1;
+    if (FillRatio != 0) {
+      if (CountUnits(FillBuf[i]) != FillRatio) {
+        snprintf(MsgBuf, OM_STRLEN, "[17] Wrong GlassRow[%d] = %d.", i, FillBuf[i]); return 1;
+      }
     }
+    TotalArea -= CountUnits(FillBuf[i]);
   }
 
   return 0;
@@ -297,6 +299,16 @@ static int DoLoad(char *BufAddr, size_t BufLen) {
     return 1;
 
   if (strcmp(BufName, GameName) != 0) {
+    if (FillRatio == 0) {
+      char Dummy[OM_STRLEN + 1];
+
+      ReadString(Dummy);
+      ReadString(Dummy);
+      ReadString(Dummy);
+
+      if ((ReadGlassFill() != 0) || (CheckGlassFill() != 0))
+        return 1;  
+    }
     GameType = 2;
     return 0;
   }

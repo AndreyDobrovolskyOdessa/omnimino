@@ -23,6 +23,8 @@
  SOFTWARE.
 ******************************************************************************/
 
+#include "omnitype.h"
+
 #include <string.h>
 #include <limits.h>
 

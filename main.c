@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "omnitype.h"
+
 #include "omnimino.h"
 #include "omniload.h"
 #include "omniplay.h"
@@ -41,6 +43,7 @@ int main(int argc,char *argv[]){
   char FName[OM_STRLEN + 1];
 
   struct Omnimino Game;
+
 
   InitGame(&Game);
 

@@ -11,6 +11,8 @@
 
 #include "md5hash.h"
 
+#include "omnitype.h"
+
 #include "omnifunc.h"
 #include "omninew.h"
 

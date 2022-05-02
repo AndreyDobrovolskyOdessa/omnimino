@@ -3,6 +3,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "omnitype.h"
+
 #include "omnifunc.h"
 
 static struct Omnimino *GG;
@@ -83,12 +85,11 @@ int CheckParameters(struct Omnimino *G){
 
 static int ReallyAllocateBuffers(void) {
 
-  /* FillBuf, BlockN, Block, GlassRow = StoreBuf */
+  /* Figure, Block, GlassRow = StoreBuf */
 
   unsigned int MaxFigure = TotalArea / WeightMin + 4;
   unsigned int MaxBlock = TotalArea + 2 * MAX_FIGURE_SIZE;
 
-  size_t FillBufSize = FillLevel * sizeof(int);
   size_t FigureBufSize = MaxFigure * sizeof(struct Coord *); 
   size_t BlockBufSize  = MaxBlock * sizeof(struct Coord);
 
@@ -109,28 +110,27 @@ static int ReallyAllocateBuffers(void) {
   StoreBufSize = 62 + 81 + 11 + 11 + FillLevel * 11 +
                  MaxFigure * 11 + MaxBlock * 11 + 81 + 11;
 
-  size_t NewGameBufSize = FillBufSize + FigureBufSize + BlockBufSize + StoreBufSize;
+  size_t NewGameBufSize = FigureBufSize + BlockBufSize + StoreBufSize;
 
   if (GameBufSize == 0) {
-    FillBuf = malloc(NewGameBufSize);
-    if (FillBuf == NULL) {
+    Figure = malloc(NewGameBufSize);
+    if (Figure == NULL) {
       snprintf(MsgBuf, OM_STRLEN, "Failed to allocate %ld byte buffer.", (long)NewGameBufSize);
       return 1;
     }
     GameBufSize = NewGameBufSize;
   } else {
     if (NewGameBufSize > GameBufSize) {
-      void *NewFillBuf = realloc(FillBuf, NewGameBufSize);
-      if (NewFillBuf == NULL) {
+      void *NewBuf = realloc(Figure, NewGameBufSize);
+      if (NewBuf == NULL) {
         snprintf(MsgBuf, OM_STRLEN, "Failed to reallocate %ld byte buffer.", (long)NewGameBufSize);
         return 1;
       }
-      FillBuf = NewFillBuf;
+      Figure = NewBuf;
       GameBufSize = NewGameBufSize;
     }
   }
 
-  Figure = (struct Coord **) (FillBuf + FillLevel);
   Block = (struct Coord *) (Figure + MaxFigure);
   GlassRow = (unsigned int *) (Block + MaxBlock);
 

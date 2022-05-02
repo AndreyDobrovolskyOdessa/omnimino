@@ -2,6 +2,8 @@
 
 #define _OMNITYPE_H 1
 
+#include <stdlib.h>
+
 /**************************************
 
            Constants
@@ -80,8 +82,8 @@ struct OmniVars {
 
 
 struct OmniMem {
+  unsigned int FillBuf[MAX_GLASS_HEIGHT];
   size_t GameBufSize;
-  unsigned int *FillBuf;
   struct Coord **Figure;
   struct Coord *Block;
   unsigned int *GlassRow;       /* used by SaveGame too */

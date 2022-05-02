@@ -129,15 +129,16 @@ static int ReadGlassFill(void) {
 
 
 static int CheckGlassFill(void) {
-  unsigned int i;
+  unsigned int i, Units;
 
   for (i = 0; i < FillLevel; i++) {
+    Units = CountUnits(FillBuf[i]);
     if (FillRatio != 0) {
-      if (CountUnits(FillBuf[i]) != FillRatio) {
+      if (Units != FillRatio) {
         snprintf(MsgBuf, OM_STRLEN, "[17] Wrong GlassRow[%d] = %d.", i, FillBuf[i]); return 1;
       }
     }
-    TotalArea -= CountUnits(FillBuf[i]);
+    TotalArea -= Units;
   }
 
   return 0;
@@ -258,9 +259,9 @@ static int LoadData(void) {
 
   if ((AllocateBuffers(GG) == 0) &&
       (ReadData() == 0) &&
-      (CheckData() == 0) &&
       (ReadGlassFill() == 0) &&
       (CheckGlassFill() == 0) &&
+      (CheckData() == 0) &&
       (ReadFigures() == 0) &&
       (CheckFigures() == 0) &&
       (ReadBlocks() == 0) &&

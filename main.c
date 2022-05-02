@@ -15,7 +15,7 @@
 
 
 void Report(struct Omnimino *G) {
-  if (G->D.LastFigure != G->M.Figure) { /* game data present */
+  if ((G->V.GameType != 3) && (G->D.LastFigure != G->M.Figure)) { /* game data present */
     int Score = G->V.EmptyCells;
     if (G->P.Goal != FILL_GOAL) {
       Score = G->C.TotalArea;

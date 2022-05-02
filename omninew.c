@@ -59,7 +59,7 @@ int CheckParameters(struct Omnimino *G){
       unsigned int i,Area = FigureSize;
 
       FullRow=((1<<(GlassWidth-1))<<1)-1;
-      TotalArea = (GlassWidth * GlassHeightBuf) - (FillLevel * FillRatio);
+      TotalArea = GlassWidth * GlassHeightBuf;
 
       if (Aperture != 0){
         Area=Aperture * Aperture;

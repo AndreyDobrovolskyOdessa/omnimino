@@ -7,3 +7,4 @@ SOURCES="md5hash.c omnimino.c omnifunc.c omniload.c omnilua.c omninew.c omniplay
 
 gcc $CFLAGS -o omnimino $SOURCES $LDFLAGS
 
+test -e omnifill || ln -s omnimino omnifill

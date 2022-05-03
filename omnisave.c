@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <string.h>
 #include <time.h>
 
@@ -51,61 +49,76 @@ void SaveGame(struct Omnimino *GG){
   int Used;
   char *UserName;
 
-  int fd;
+  FILE *fout;
 
+
+  if (GameType == 3)
+    return;
 
   StorePtr = (char *) GlassRow;
   StoreFree = StoreBufSize;
 
+  do {
+    for (i = 0; i < PARNUM; i++, UPtr++)
+      StoreUnsigned(*UPtr, '\n');
 
-  for (i = 0; i < PARNUM; i++, UPtr++)
-    StoreUnsigned(*UPtr, '\n');
+    if ((GameType == 2) && (FillRatio != 0))
+        break;
 
-  StoreString(ParentName);
-  StoreInt((int)(LastFigure - Figure), '\n');
-  StoreInt((int)(NextFigure - Figure), '\n');
+    StoreString(ParentName);
+    StoreInt((int)(LastFigure - Figure), '\n');
+    StoreInt((int)(NextFigure - Figure), '\n');
 
-  for (i = 0; i < FillLevel; i++)
-    StoreUnsigned(FillBuf[i], ';');
-  StoreString("");
+    for (i = 0; i < FillLevel; i++)
+      StoreUnsigned(FillBuf[i], ';');
+    StoreString("");
 
-  struct Coord **F;
+    if (GameType == 2)
+      break;
 
-  for(F = Figure; F <= LastFigure; F++)
-    StoreInt((int)(*F - Block), ';');
-  StoreString("");
+    struct Coord **F;
 
-  struct Coord *B;
+    for(F = Figure; F <= LastFigure; F++)
+      StoreInt((int)(*F - Block), ';');
+    StoreString("");
 
-  for(B = Block; B < (*LastFigure); B++) {
-    StoreInt(B->x, ',');
-    StoreInt(B->y, ';');
-  }
-  StoreString("");
+    struct Coord *B;
 
-  UserName = getenv("USER");
-  if (!UserName)
-    UserName = "anonymous";
-  snprintf(PlayerName,OM_STRLEN,"%s",UserName);
-  StoreString(PlayerName);
+    for(B = Block; B < (*LastFigure); B++) {
+      StoreInt(B->x, ',');
+      StoreInt(B->y, ';');
+    }
+    StoreString("");
 
-  TimeStamp = (unsigned int)time(NULL);
-  StoreUnsigned(TimeStamp, '\n');
+    UserName = getenv("USER");
+    if (!UserName)
+      UserName = "anonymous";
+    snprintf(PlayerName,OM_STRLEN,"%s",UserName);
+    StoreString(PlayerName);
+
+    TimeStamp = (unsigned int)time(NULL);
+    StoreUnsigned(TimeStamp, '\n');
+
+  } while(0);
 
   Used = StoreBufSize - StoreFree;
   md5hash(GlassRow, Used, GameName);
   strcat(GameName, ".mino");
 
-  fd = open(GameName, O_CREAT | O_WRONLY, 0666);
-  if (fd < 0) {
+  if (GameType == 2)
+    GameName[0] = 'p';
+
+
+  fout = fopen(GameName, "w");
+  if (fout == NULL) {
     snprintf(MsgBuf, OM_STRLEN, "Can not open for write %s.", GameName);
     GameType = 3;
   } else {
-    if (write(fd, GlassRow, Used) != Used) {
+    if(fwrite(GlassRow, sizeof(char), Used, fout) != (size_t)Used) {
       snprintf(MsgBuf, OM_STRLEN, "Error writing %s.", GameName);
       GameType = 3;
     }
-    close(fd);
+    fclose(fout);
   }
 }
 

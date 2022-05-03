@@ -103,11 +103,9 @@ void SaveGame(struct Omnimino *GG){
 
   Used = StoreBufSize - StoreFree;
   md5hash(GlassRow, Used, GameName);
-  strcat(GameName, ".mino");
-
   if (GameType == 2)
-    GameName[0] = 'p';
-
+    strcat(GameName, ".preset");
+  strcat(GameName, ".mino");
 
   fout = fopen(GameName, "w");
   if (fout == NULL) {

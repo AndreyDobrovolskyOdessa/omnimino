@@ -31,7 +31,9 @@ omniplay.c:
 
     #define LOOSE_SYM '-'
 
-    #define WIN_SYM '#'
+    #define WIN_SYM '+'
+
+    #define BELOW_SYM '?' /* invisible part of the glass */
 
     #define THICKNESS 4 /* glass walls */
 
@@ -104,7 +106,7 @@ GlassHeight\
 GlassFillLevel\
 GlassFillRatio (number of blocks in each prefilled row)
 
-
+GlassFillRatio == 0 assumes that prefill values are present below in the .mino file (line 17) and will be constant, not created randomly (see "omnifill" utility).
 
 The set of 13 parameters is used to create game record file. 
 
@@ -130,6 +132,7 @@ Default settings for the glass symbols are:
 
 You can change the defaults defined in omniplay.c according to Your taste before compiling.
 
+An outer side of the right glass wall is used as the visibility stripe - invisible part of the glass below the screen is displayed as BELOW_SYM (default is '?').
 
 ## Score
 
@@ -188,7 +191,7 @@ Line No    Parameter or data
 15         Figure number\
 16         Current figure\
 17         Glass prefill rows, delimited with ;\
-18         Figures' first block numbers, deliimited with ;\
+18         Figures' first block numbers, delimited with ;\
 19         Blocks coordinates. x,y;\
 20         Player $USER\
 21         Time of save
@@ -237,6 +240,19 @@ Although You can take a look at
     minos.lua -h
 
 Of course You need Lua installed in Your system.
+
+
+### omnifill
+
+Utility intended for editing constant prefill of the preset files (FillRatio == 0). Uses any preset .mino file as the template. Editing takes place as omnimino game with single-block figures with Gravity = 0. In case of exit with save ('x' command) new preset file is written with the glass gathered field as the glass field preset. Retuns 0 in case valid preset file was successfully loaded, modified and successfully saved. In all other cases returns 1.
+
+Usage:
+
+    ./omnifill infile
+
+Preset file is named according to its content md5 sum with ".preset" suffix added. You can change the newly created file name with the help of for example
+
+    ./omnifill old.preset.mino && mv $(./fre.sh) new.preset.mino 
 
 
 Andrey Dobrovolsky <andrey.dobrovolsky.odessa@gmail.com>

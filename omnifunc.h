@@ -2,9 +2,6 @@
 
 #define _OMNIFUNC_H 1
 
-#include "omnitype.h"
-
-
 void ScaleUp(struct Coord *B,int *V);
 void FindLeft(struct Coord *B,int *V);
 void FindBottom(struct Coord *B,int *V);

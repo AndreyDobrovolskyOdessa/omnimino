@@ -3,6 +3,8 @@
 #include <ncurses.h>
 
 
+#include "omnitype.h"
+
 #include "omnifunc.h"
 #include "omnimino.h"
 #include "omninew.h"
@@ -23,8 +25,8 @@ static struct Omnimino *GG;
 
 #define GOAL_SYM  (":;=")
 #define LOOSE_SYM '-'
-#define WIN_SYM   '#'
-#define BELOW_SYM '.'
+#define WIN_SYM   '+'
+#define BELOW_SYM '?'
 
 #define THICKNESS 4
 

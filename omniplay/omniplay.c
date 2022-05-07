@@ -1,18 +1,18 @@
 #include <string.h>
 
-#include <ncurses.h>
+#include <curses.h>
 
 
-#include "omnitype.h"
+#include "../omnitype.h"
 
-#include "omnifunc.h"
-#include "omnimino.h"
-#include "omninew.h"
+#include "../omnifunc.h"
+#include "../omnimino.h"
+#include "../omninew.h"
 
 
 static struct Omnimino *GG;
 
-#include "omnimino.def"
+#include "../omnimino.def"
 
 
 /*******************************************************

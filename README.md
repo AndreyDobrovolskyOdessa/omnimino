@@ -12,9 +12,15 @@ Console game inspired by polymino puzzle
 omnimino infile
 
 
-## dependency
+## Build
 
-ncurses(w)
+You will need gcc, pkg-config and ncursesw-dev
+
+    ./build.sh
+
+Optionally You can use redo build system. Current .do files are written in Lua for https://github.com/AndreyDobrovolskyOdessa/redo-c/tree/dev2 version of https://github.com/leahneukirchen/redo-c.
+
+    redo '' 
 
 
 ## configurable prior to compile

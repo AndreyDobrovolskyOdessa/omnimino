@@ -10,7 +10,7 @@
 
 #include "omnimino.h"
 #include "omniload.h"
-#include "omniplay.h"
+#include "omniplay/omniplay.h"
 #include "omnisave.h"
 #include "omnilua.h"
 #include "omninew.h"

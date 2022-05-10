@@ -1,5 +1,10 @@
 #!/usr/bin/env lua
 
+local BinName = arg[2]
+
+local CName = arg[2] .. ".c"
+local RName = arg[2] .. ".require"
+
 
 --------- Editable -----------
 
@@ -8,6 +13,27 @@ local Linker = "gcc"
 local Libs = ""
 
 ------------------------------
+
+-- if arg[2] == "main" then current directory name
+-- is used as the output binary name
+
+local TDir, TName = arg[2]:match("(.-)([^/]*)$")
+
+if TName == "main" then
+  local DirName = TDir
+  if DirName == "" then
+    local f = assert(io.popen("pwd"))
+    DirName = f:read() .. "/"
+    assert(f:close())
+  end
+  BinName = TDir .. DirName:match("([^/]*)/$")
+end
+
+
+if not os.execute("test -e " .. CName) then
+  io.stderr:write("Missing " .. CName .. "\n")
+  os.exit(1)
+end
 
 
 local Sanitize = function(P)
@@ -29,28 +55,6 @@ local Sanitize = function(P)
   return D .. N
 end
 
-
-local BinName = arg[2]
-
-local TDir, TName = arg[2]:match("(.-)([^/]*)$")
-
-if TName == "main" then
-  local DirName = TDir
-  if DirName == "" then
-    local f = assert(io.popen("pwd"))
-    DirName = f:read() .. "/"
-    assert(f:close())
-  end
-  BinName = TDir .. DirName:match("([^/]*)/$")
-end
-
-local CName = arg[2] .. ".c"
-local RName = arg[2] .. ".require"
-
-if not os.execute("test -e " .. CName) then
-  io.stderr:write("Missing " .. CName .. "\n")
-  os.exit(1)
-end
 
 assert(os.execute("redo-ifchange " .. RName))
 

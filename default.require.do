@@ -1,5 +1,8 @@
 #!/usr/bin/env lua
 
+-- The purpose of this script is to compile "arg[2].c", mark all
+-- immediate dependencies with "redo-ifchange" and collect all
+-- recursive dependencies in "arg[2].require"
 
 --------- Editable ---------
 
@@ -27,8 +30,6 @@ local Sanitize = function(P)
   return D .. N
 end
 
-
--- local BName = arg[1]:gsub("%.require$", "") -- = arg[2]
 
 local CName = arg[2] .. ".c"
 local OName = arg[2] .. ".o"
@@ -97,17 +98,15 @@ end
 
 for i, rn in ipairs(RNames) do
   local RDir = RNamesShort[i]:match(".*/") or ""
-  local fr = io.open(rn)
-  if fr then
-    for r in fr:lines() do
-      local n = r
-      if r:match("%.o$") then
-        n = Sanitize(RDir .. r)
-      end
-      DepNames[n] = true
+  local fr = assert(io.open(rn))
+  for r in fr:lines() do
+    local n = r
+    if r:match("%.o$") then
+      n = Sanitize(RDir .. r)
     end
-    fr:close()
+    DepNames[n] = true
   end
+  fr:close()
 end
 
 

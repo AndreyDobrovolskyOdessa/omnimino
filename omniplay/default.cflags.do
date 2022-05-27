@@ -1,17 +1,27 @@
-#!/usr/local/bin/lua
+#!/usr/bin/env lua
 
 ---------- Editable ------------
 
-local Cflags = "-Os -Wall -Wextra -Wno-format-truncation -fno-asynchronous-unwind-tables"
+local Cflags = "-O2 -Wall -Wextra -Wno-format-truncation -fno-asynchronous-unwind-tables"
 
 local Deps = "ncursesw"
 
 --------------------------------
 
+local Assert = function(cmd, msg)
+  local success, how, exit_code = os.execute(cmd)
+  if not success then
+    if msg then
+      io.stderr:write(msg .. "\n")
+    end
+    os.exit(exit_code)
+  end
+end
+
 local f
 
 if Deps:match("[^%s]") then
-  assert(os.execute("redo .dep." .. arg[1]))
+  Assert("redo .dep." .. arg[1])
   f = assert(io.popen("pkg-config --cflags " .. Deps))
   Cflags = Cflags .. " " .. f:read()
   assert(f:close())

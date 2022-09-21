@@ -20,7 +20,7 @@ You will need gcc, pkg-config and ncursesw-dev
 
 Optionally You can use redo build system. Current .do files are written in Lua for https://github.com/AndreyDobrovolskyOdessa/redo-c/tree/dev3 version of https://github.com/leahneukirchen/redo-c.
 
-    redo '' 
+    (. ./redo.do; redo '') 
 
 
 ## configurable prior to compile

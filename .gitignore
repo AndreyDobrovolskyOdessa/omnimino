@@ -1,5 +1,7 @@
 omnimino
+omnifill
 *.mino
+*.cflags
 *.o
-.dep*
 *.require
+.redo.*

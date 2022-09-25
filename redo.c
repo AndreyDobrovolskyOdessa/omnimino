@@ -18,6 +18,15 @@
 */
 
 /*
+This redo-c version can be found at:
+
+https://github.com/AndreyDobrovolskyOdessa/redo-c/tree/dev3
+
+which is the fork of:
+
+https://github.com/leahneukirchen/redo-c
+
+
 The purpose of this redo-c version is to fully unfold all advantages of hashed
 dpendencies records. It means that for the dependency tree a -> b -> c changing
 "c" must trigger execution of "b.do", but if the resulting "b" has the same
@@ -449,7 +458,7 @@ file_chdir(int *fd, const char *name)
 }
 
 
-int xflag, fflag, sflag, tflag, iflag, oflag = 0, nflag = 0, wflag = 0;
+int xflag, fflag, sflag, tflag, iflag, oflag = 0, nflag = 0, wflag = 0, eflag = 0, lflag;
 
 
 /*
@@ -469,12 +478,21 @@ find_dofile(char *target, char *dofile_rel, size_t dofile_free, int *uprel, cons
 	char *ext  = target; 
 	char *dofile = dofile_rel;
 
-	/* we may avoid doing default*.do files */
-	/*
-	if ((strncmp(target, default_name, sizeof default_name - 1) == 0) &&
-	    (strcmp(strchr(target,'\0') - sizeof suffix + 1, suffix) == 0))
+	/* ".redo.*" can not be the target */ 
+
+	if (strncmp(target, redo_prefix, sizeof redo_prefix - 1) == 0)
 		return 0;
-	*/
+
+	/* we can suppress *.do or default*.do files doing */
+
+	if (strcmp(strchr(target,'\0') - sizeof suffix + 1, suffix) == 0) {
+		if (eflag < 1)
+			return 0;
+		if (strncmp(target, default_name, sizeof default_name - 1) == 0) {
+			if (eflag < 2)
+				return 0;
+		}
+	}
 
 	if (dofile_free < (strlen(target) + sizeof suffix))
 		return 0;
@@ -656,8 +674,10 @@ check_record(char *line)
 {
 	int line_len = strlen(line);
 
-	if (line_len < HEXHASH_LEN + 1 + HEXDATE_LEN + 1 + 1)
+	if (line_len < HEXHASH_LEN + 1 + HEXDATE_LEN + 1 + 1) {
+		fprintf(stderr, "Warning: dependency record too short. Target will be rebuilt.\n");
 		return 0;
+	}
 
 	if (line[line_len - 1] != '\n') {
 		fprintf(stderr, "Warning: dependency record truncated. Target will be rebuilt.\n");
@@ -702,7 +722,7 @@ find_record(const char *filename)
 
 
 static int
-dep_changed(const char *line, int hint)
+dep_changed(const char *line, int hint, int is_target)
 {
 	const char *filename = line + HEXHASH_LEN + 1 + HEXDATE_LEN + 1;
 	int fd;
@@ -723,8 +743,13 @@ dep_changed(const char *line, int hint)
 		return 0;
 
 	if (oflag) {
-		if (hint == IS_SOURCE)
-			fprintf(stdout, "%s\n", filename);
+		if (hint == IS_SOURCE) {
+			filename = track(0, 0);
+			if (is_target && tflag)
+				fprintf(stdout, "%s\n", strrchr(filename, ':') + 1);
+			if ((!is_target) && sflag)
+				fprintf(stdout, "%s\n", strchr(filename, '\0') + 1);
+		}
 		return 0;
 	}
 
@@ -821,7 +846,7 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 	target_full = track(target, 1);
 	if (target_full == 0){
 		fprintf(stderr, "Dependency loop attempt -- %s\n", dep_path);
-		return TARGET_LOOP;
+		return lflag ? IS_SOURCE : TARGET_LOOP;
 	}
 
 	if (strlen(target) >= sizeof target_base) {
@@ -831,12 +856,12 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 
 	strcpy(target_base, target);
 	if (!find_dofile(target_base, dofile_rel, sizeof dofile_rel, &uprel, target_full)) {
-		if (sflag)
+		if (sflag && (!oflag))
 			printf("%s\n", target_full);
 		return IS_SOURCE;
 	}
 
-	if (tflag)
+	if (tflag && (!oflag))
 		printf("%s\n", target_full);
 
 	strcpy(stpcpy(redofile, redo_prefix), target);
@@ -851,7 +876,7 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 		return TARGET_BUSY;
 	}
 
-	fredo = /* fflag ? NULL : */ fopen(redofile,"r");
+	fredo = fopen(redofile,"r");
 
 	if (fredo) {
 		char line[HEXHASH_LEN + 1 + HEXDATE_LEN + 1 + PATH_MAX + 1];
@@ -870,7 +895,7 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 			if (!is_target)
 				dep_err = do_update_dep(*dir_fd, filename, nlevel + 1, &hint);
 
-			if (dep_err || dep_changed(line, hint))
+			if (dep_err || dep_changed(line, hint, is_target))
 				break;
 
 			memcpy(hexhash, line, HEXHASH_LEN);
@@ -977,7 +1002,7 @@ main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((opt = getopt(argc, argv, "+softwnix")) != -1) {
+	while ((opt = getopt(argc, argv, "+owlfixnest")) != -1) {
 		switch (opt) {
 		case 'x':
 			setenvfd("REDO_TRACE", 1);
@@ -1004,8 +1029,15 @@ main(int argc, char *argv[])
 		case 'w':
 			wflag = 1;
 			break;
+		case 'e':
+			if (eflag < 2)
+				setenvfd("REDO_DOFILES", ++eflag);
+			break;
+		case 'l':
+			setenvfd("REDO_LOOP_WARN", 1);
+			break;
 		default:
-			fprintf(stderr, "Usage: redo [-foxtwins]  [TARGETS...]\n");
+			fprintf(stderr, "Usage: redo [-loftsexwine]  [TARGETS...]\n");
 			exit(1);
 		}
 	}
@@ -1017,15 +1049,14 @@ main(int argc, char *argv[])
 	sflag = envint("REDO_LIST_SOURCES");
 	tflag = envint("REDO_LIST_TARGETS");
 	iflag = envint("REDO_IGNORE_LOCKS");
+	eflag = envint("REDO_DOFILES");
+	lflag = envint("REDO_LOOP_WARN");
 
 	lock_fd = envfd("REDO_LOCK_FD");
 	level = envint("REDO_LEVEL");
 	dirprefix = getenv("REDO_DIRPREFIX");
 
 	track(getenv("REDO_TRACK"), 0);
-
-	if (strcmp(program, "redo-always") == 0)
-		dprintf(lock_fd, "\n");
 
 	compute_updir(dirprefix, updir);
 
@@ -1048,6 +1079,9 @@ main(int argc, char *argv[])
 		} else
 			return dep_err;
 	}
+
+	if (strcmp(program, "redo-always") == 0)
+		dprintf(lock_fd, "Impossible hash of impossible file, which will become up-to-date never ever       .redo..redo..redo..redo.\n");
 
 	return redo_err;
 }

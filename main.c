@@ -80,8 +80,8 @@ int main(int argc,char *argv[]){
           Report(&Game);
         }
       }
-      fprintf(stdout, "MaxFigureSize = %d, MaxGlassHeight = %d\n\n",
-                       MAX_FIGURE_SIZE,    MAX_GLASS_HEIGHT);
+      fprintf(stdout, "MaxFigureSize = %d, MaxGlassWidth = %d, MaxGlassHeight = %d\n\n",
+                       MAX_FIGURE_SIZE,    MAX_GLASS_WIDTH,    MAX_GLASS_HEIGHT);
     }
 
     return 0;

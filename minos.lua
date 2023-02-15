@@ -13,10 +13,10 @@ described by $1 ... $7
 $1 -	game type, one of "g[ame]", "p[reset]", "e[rror]" or "x" (any)
 
 $2 -	string of up to 4 decimal digits, describing correspondingly:
-	FigureWeightMax, Apperture, Metrics and FigureWeightMin
+	FigureWeightMax, Apperture, Metric and FigureWeightMin
 
 $3 -	string of up to 5 decimal digits, describing correspondingly:
-	Goal, Gravity, SingleLayer, FullRowClear and OrderFixed options
+	Goal, Gravity, SingleLayer, DiscardFullRows and FixedSequence options
 
 $4 -	GlassWidth
 
@@ -68,32 +68,32 @@ WeightMax	WMax
 WeightMin	WMin
 Gravity		Grav
 SingleLayer	SL
-FullRowClear	FRC
+DiscardFullRows	DFR
 Goal		Goal
 GlassWidth	GW
 GlassHeight	GH
 FillLevel	FL
 FillRatio	FR
-SlotsUnique	SU
+FixedSequence	FS
 
 Parameters order in .mino file
 
-App	Metr	WMax	WMin	Grav	SL	FRC	Goal	GW	GH	FL	FR	SU
+App	Metr	WMax	WMin	Grav	SL	DFR	Goal	GW	GH	FL	FR	FS
 
 
 Parameters order for display
 
-WMax	WMin	App	Metr	Goal	Grav	SL	FRC	GW	GH	FL	FR
+WMax	WMin	App	Metr	Goal	Grav	SL	DFR	GW	GH	FL	FR	FS
 
 
 Parameters order for keys
 
-Type	<WMax	App	Metr	WMin>	<Goal	Grav	SL	FRC>	GW	GH	FL	FR
+Type	<WMax	App	Metr	WMin>	<Goal	Grav	SL	DFR>	GW	GH	FL	FR
 
 
 Parameters order for sort - internal data order
 
-Type	WMax	Goal	App	Metr	Grav	SL	FRC	GW	GH	FL	FR	WMin
+Type	WMax	Goal	App	Metr	Grav	SL	DFR	GW	GH	FL	FR	WMin
 
 ]]
 
@@ -229,11 +229,11 @@ local ShowSortedBranches = function(SBranch)
 
   io.stderr:write([[
 
-       Metric  Gravity  FlatFun      OrderFixed
+       Metric  Gravity  SingleLayer  FixedSequence
              \     \   /                  |
-   Aperture  |      \  |  ClearFullRows   |
+   Aperture  |      \  |  DiscardFullRows |
            \ |       \ | /                |
-    Weight A M  Goal G F C  Glass   Fill  O   Scores
+    Weight A M  Goal G S D  Glass   Fill  F   Scores
 
 ]])
 

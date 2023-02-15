@@ -38,9 +38,8 @@ void Report(struct Omnimino *G) {
 }
 
 
-#define USAGE "Omnimino 0.6 Copyright (C) 2019-2022 Andrey Dobrovolsky\n\n\
-Usage: omnimino infile\n\
-       ls *.mino | omnimino > outfile\n\n"
+#define COPYRIGHT "Omnimino 0.6 Copyright (C) 2019-2023 Andrey Dobrovolsky\n\n"
+#define USAGE "Usage: omnimino infile\n       ls *.mino | omnimino > outfile\n\n"
 
 
 int main(int argc,char *argv[]){
@@ -69,9 +68,7 @@ int main(int argc,char *argv[]){
       }
     } else {
       if (isatty(fileno(stdin))) {
-        if (isatty(fileno(stdout))) {
-          fprintf(stdout, USAGE);
-        }
+        fprintf(stdout, COPYRIGHT USAGE);
       } else {
         while (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
           if (LoadGame(&Game, FName) == 0) {
@@ -83,6 +80,8 @@ int main(int argc,char *argv[]){
           Report(&Game);
         }
       }
+      fprintf(stdout, "MaxFigureSize = %d, MaxGlassHeight = %d\n\n",
+                       MAX_FIGURE_SIZE,    MAX_GLASS_HEIGHT);
     }
 
     return 0;

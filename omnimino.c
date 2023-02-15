@@ -117,7 +117,7 @@ static void Drop(struct Coord **FigN) {
 
   if(Gravity){
     Bottom = y >> 1;
-    if (FlatFun) {
+    if (SingleLayer) {
       for (y = Bottom; y > 0; y--) {
         ForEachIn(FigureBuf, AddY, -2);
         if (Overlaps(FigureBuf)) {
@@ -140,7 +140,7 @@ static void Drop(struct Coord **FigN) {
   Top = (ForEachIn(FigureBuf, FindTop, INT_MIN) >> 1) + 1;
   if (Top > GlassLevel)
     GlassLevel = Top;
-  if (FullRowClear)
+  if (DiscardFullRows)
     ClearFullRows(y, Top);
 }
 

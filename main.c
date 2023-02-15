@@ -98,12 +98,12 @@ int main(int argc,char *argv[]){
         Game.P.WeightMax = 1;
         Game.P.WeightMin = 1;
         Game.P.Gravity = 0;
-        Game.P.FlatFun = 0;
-        Game.P.FullRowClear = 0;
+        Game.P.SingleLayer = 0;
+        Game.P.DiscardFullRows = 0;
         Game.P.Goal = 0;
         Game.P.FillLevel = 0;
         Game.P.FillRatio = 0;
-        Game.P.SlotsUnique = 0;
+        Game.P.FixedSequence = 0;
 
         Game.C.TotalArea = Game.P.GlassWidth * Game.P.GlassHeightBuf;
 

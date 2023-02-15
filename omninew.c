@@ -32,10 +32,10 @@ int CheckParameters(struct Omnimino *G){
     snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) > [3] WeightMax (%d)", WeightMin, WeightMax);
   } else if (Gravity > 1){
     snprintf(MsgBuf, OM_STRLEN, "[5] Gravity (%d) can be 0 or 1", Gravity);
-  } else if (FlatFun > 1){
-    snprintf(MsgBuf, OM_STRLEN, "[6] FlatFun (%d) can be 0 or 1", FlatFun);
-  } else if (FullRowClear > 1){
-    snprintf(MsgBuf, OM_STRLEN, "[7] FullRowClear (%d) can be 0 or 1", FullRowClear);
+  } else if (SingleLayer > 1){
+    snprintf(MsgBuf, OM_STRLEN, "[6] SingleLayer (%d) can be 0 or 1", SingleLayer);
+  } else if (DiscardFullRows > 1){
+    snprintf(MsgBuf, OM_STRLEN, "[7] DiscardFullRows (%d) can be 0 or 1", DiscardFullRows);
   } else if (Goal >= MAX_GOAL){
     snprintf(MsgBuf, OM_STRLEN, "[8] Goal (%d) > 2", Goal);
   } else {
@@ -53,8 +53,8 @@ int CheckParameters(struct Omnimino *G){
       snprintf(MsgBuf, OM_STRLEN, "[11] FillLevel (%d) > [10] GlassHeight (%d)", FillLevel, GlassHeightBuf);
     } else if (FillRatio >= GlassWidth){
       snprintf(MsgBuf, OM_STRLEN, "[12] FillRatio (%d) >= [9] GlassWidth (%d)", FillRatio, GlassWidth);
-    } else if (SlotsUnique > 1){
-      snprintf(MsgBuf, OM_STRLEN, "[13] Ordered queue (%d) can be 0 or 1", SlotsUnique);
+    } else if (FixedSequence > 1){
+      snprintf(MsgBuf, OM_STRLEN, "[13] FixedSequence (%d) can be 0 or 1", FixedSequence);
     } else {
       unsigned int i, Area;
 
@@ -178,7 +178,7 @@ static int SelectSlots(struct Coord *Slot, struct Coord *FBlock, int Weight) {
         Slot[SlotNum].x = x + (UseNeighbours ? FBlock[SeedCnt].x : 0);
         Slot[SlotNum].y = y + (UseNeighbours ? FBlock[SeedCnt].y : 0);
         if (((Weight >= (int)WeightMin) || (!FindBlock(Slot + SlotNum, FBlock, Weight))) &&
-           (/* (!SlotsUnique) || */(!FindBlock(Slot + SlotNum, Slot, SlotNum))))
+           (!FindBlock(Slot + SlotNum, Slot, SlotNum)))
           SlotNum++;
       }
     }

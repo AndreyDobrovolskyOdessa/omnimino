@@ -40,14 +40,14 @@ struct OmniParms {
   unsigned int WeightMax;
   unsigned int WeightMin;
   unsigned int Gravity;
-  unsigned int FlatFun; /* single-layer, moving figure can not overlap placed blocks */
-  unsigned int FullRowClear;
+  unsigned int SingleLayer; /* single-layer, moving figure can not overlap placed blocks */
+  unsigned int DiscardFullRows;
   unsigned int Goal;
   unsigned int GlassWidth;
   unsigned int GlassHeightBuf;
   unsigned int FillLevel;
   unsigned int FillRatio; /* < GlassWidth */
-  unsigned int SlotsUnique;
+  unsigned int FixedSequence;
 };
 
 #define PARNUM (sizeof(struct OmniParms) / sizeof(unsigned int))
@@ -71,7 +71,7 @@ struct OmniVars {
   struct Coord **LastTouched; /* latest modified */
   struct Coord **FigureBuf;
   unsigned int GameType;
-  unsigned int GlassHeight; /* can change during game if FullRowClear */
+  unsigned int GlassHeight; /* can change during game if DiscardFullRows */
   unsigned int FieldSize;   /* follows GlassHeight with FigureSize + 1 bias */
   unsigned int GlassLevel; /* lowest free line */
   unsigned int EmptyCells;

@@ -184,13 +184,13 @@ static void DrawStatus(void) {
   if (Gravity)
     mvwaddch(MyScr, getmaxy(MyScr) - 4, 0, 'G');
 
-  if (FlatFun)
+  if (SingleLayer)
     mvwaddch(MyScr, getmaxy(MyScr) - 3, 0, 'S');
 
-  if (FullRowClear)
+  if (DiscardFullRows)
     mvwaddch(MyScr, getmaxy(MyScr) - 2, 0, 'D');
 
-  if (SlotsUnique)
+  if (FixedSequence)
     mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'F');
 }
 
@@ -250,7 +250,7 @@ static void Attempt(bfunc F, int V) {
     ForEachIn(FigureBuf, F, V);
     ForEachIn(FigureBuf, AddX, C.x);
     ForEachIn(FigureBuf, AddY, C.y);
-    if(FitsGlass(FigureBuf) && ((!FlatFun) || (!Overlaps(FigureBuf)))){
+    if(FitsGlass(FigureBuf) && ((!SingleLayer) || (!Overlaps(FigureBuf)))){
       CopyFigure(CurFigure,FigureBuf);
       LastTouched = CurFigure;
       GameModified=1;
@@ -311,7 +311,7 @@ static void Rewind(void) {
 static void SkipForward(void) {
   struct Coord **F;
 
-  if (!SlotsUnique) {
+  if (!FixedSequence) {
     CopyFigure(FigureBuf, CurFigure);
     memmove(CurFigure[0], CurFigure[1], (LastFigure[0] - CurFigure[1]) * sizeof(struct Coord));
     for (F = CurFigure + 1; F < LastFigure; F++)
@@ -325,7 +325,7 @@ static void SkipForward(void) {
 static void SkipBackward(void) {
   struct Coord **F;
 
-  if (!SlotsUnique) {
+  if (!FixedSequence) {
     CopyFigure(FigureBuf, LastFigure - 1);
     for (F = LastFigure - 1; F > CurFigure; F--)
       F[0] = F[1] - (F[0] - F[-1]);

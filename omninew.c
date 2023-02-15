@@ -56,22 +56,15 @@ int CheckParameters(struct Omnimino *G){
     } else if (SlotsUnique > 1){
       snprintf(MsgBuf, OM_STRLEN, "[13] Ordered queue (%d) can be 0 or 1", SlotsUnique);
     } else {
-      unsigned int i,Area = FigureSize;
+      unsigned int i, Area;
 
-      FullRow=((1<<(GlassWidth-1))<<1)-1;
+      FullRow = ((1 << (GlassWidth - 1)) << 1) - 1;
       TotalArea = GlassWidth * GlassHeightBuf;
 
-      if (Aperture != 0){
-        Area=Aperture * Aperture;
-        if(Metric == 0){
-          if ((Aperture % 2) == 0)
-            Area -= Aperture;
-          for (i = 1; i < ((Aperture - 1) / 2); i++)
-            Area -= 4*i;
-        }
-      }
+      for (Area = 0, i = 0; i < Aperture; i++)
+        Area += Metric ? Aperture : (i | 1);
 
-      if (Area < WeightMin){
+      if (Aperture && (Area < WeightMin)) {
         snprintf(MsgBuf, OM_STRLEN, "[4] WeightMin (%d) > Aperture Area (%d)", WeightMin, Area);
       } else {
         return 0;

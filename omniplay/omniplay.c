@@ -185,13 +185,13 @@ static void DrawStatus(void) {
     mvwaddch(MyScr, getmaxy(MyScr) - 4, 0, 'G');
 
   if (FlatFun)
-    mvwaddch(MyScr, getmaxy(MyScr) - 3, 0, 'F');
+    mvwaddch(MyScr, getmaxy(MyScr) - 3, 0, 'S');
 
   if (FullRowClear)
-    mvwaddch(MyScr, getmaxy(MyScr) - 2, 0, 'C');
+    mvwaddch(MyScr, getmaxy(MyScr) - 2, 0, 'D');
 
   if (SlotsUnique)
-    mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'O');
+    mvwaddch(MyScr, getmaxy(MyScr) - 1, 0, 'F');
 }
 
 

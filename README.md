@@ -18,7 +18,7 @@ You will need gcc, pkg-config and ncursesw-dev
 
     ./build.sh
 
-Optionally You can use redo build system. Current .do files are written in Lua for https://github.com/AndreyDobrovolskyOdessa/redo-c/tree/dev3 version of https://github.com/leahneukirchen/redo-c.
+Optionally You can use redo build system. Current .do files are written in Lua for https://github.com/AndreyDobrovolskyOdessa/redo-c version of https://github.com/leahneukirchen/redo-c.
 
     (. ./redo.do; redo ...) 
 
@@ -52,7 +52,7 @@ Figure is a set of blocks with fixed ralative placement. Number of blocks in eac
 
 Figures can be generated using aperture, or using natural neighbourship. This is defined by Aperture parameter value. If it is 0, figure blocks are choosed as neighbours. If it is non-zero, aperture is filled with independently placed blocks, which can be separated in space.
 
-Another game figures' sequence parameter is Metrics. Metrics=0 means, that block have 4 neighbours, Metric=1 means 8 neighbours. This is for Aperture=0 case.
+Another game figures' sequence parameter is Metric. Metric = 0 means, that block have 4 neighbours, Metric=1 means 8 neighbours. This is for Aperture=0 case.
 
 If Aperture is non-zero, Metric=1 means square aperture with side length of value of Aperture parameter, in case Metric=0 this square loose its corners.
 
@@ -92,9 +92,9 @@ Gameplay options:
 
 Gravity (0, 1)\
 SingleLayer (0, 1)\
-FullRowClear (0, 1)\
+DiscardFullRows (0, 1)\
 Goal (0 - 2)\
-OrderFixed (0, 1)
+FixedSequence (0, 1)
 
 Goal may be:
 
@@ -124,9 +124,9 @@ Game ends if the figure was placed outside the glass (at least one of figure cub
 You are being prompted about the current game goal and game status (game is over, additional goals reached) with the help of symbols used to draw the glass and 4 symbols, appearing in the left-bottom corner of the screen and meaning:
 
 G - gravity on\
-F - flat fun mode\
-C - full rows will be cleared\
-O - figures' order is fixed
+S - single layer mode\
+D - full rows will be discarded\
+F - figures' sequence is fixed
 
 Default settings for the glass symbols are:
 
@@ -134,7 +134,7 @@ Default settings for the glass symbols are:
 ';' - touch\
 '=' - flat\
 '-' - game is over\
-'#' - success
+'+' - success
 
 You can change the defaults defined in omniplay.c according to Your taste before compiling.
 
@@ -186,13 +186,13 @@ Line No    Parameter or data
 4          FigureWeightMin\
 5          Gravity\
 6          SingleLayer\
-7          FullRowClear\
+7          DiscardFullRows\
 8          Goal\
 9          GlassWidth\
 10         GlassHeight\
 11         FillLevel\
 12         FillRatio\
-13         OrderFixed\
+13         FixedSequence\
 14         ParentName\
 15         Figure number\
 16         Current figure\

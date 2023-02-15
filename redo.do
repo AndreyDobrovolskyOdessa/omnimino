@@ -11,13 +11,12 @@
 # Build redo with redo:
 #
 #	redo redo
-#
-#	redo ''
 
-if test -n "$REDO_LEVEL"
+if test -n "$REDO_TRACK"
 then # driven by redo
-  redo redo.c
-  cc -o "$3" redo.c
+  depends-on redo.c local.cflags
+  test -f local.cflags && CFLAGS="$(cat local.cflags)" || CFLAGS=""
+  cc $CFLAGS -o "$3" redo.c
 else # bootstrapping
   cc -o redo redo.c &&
   {
@@ -26,10 +25,9 @@ else # bootstrapping
     { test -d "$1" && mv -i redo "$1"; } &&
     (
       cd "${1:-.}"
-      ln -sf redo redo-ifchange &&
-      ln -sf redo redo-ifcreate &&
-      ln -sf redo redo-always
+      ln -sf redo depends-on
     ) &&
     echo Ok || echo Error;
   }
 fi
+

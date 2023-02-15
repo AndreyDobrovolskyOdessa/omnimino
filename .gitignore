@@ -4,4 +4,6 @@ omnifill
 *.cflags
 *.o
 *.require
-.redo.*
+.do..*
+redo
+depends-on

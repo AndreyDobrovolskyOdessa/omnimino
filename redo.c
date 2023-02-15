@@ -20,7 +20,7 @@
 /*
 This redo-c version can be found at:
 
-https://github.com/AndreyDobrovolskyOdessa/redo-c/tree/dev3
+https://github.com/AndreyDobrovolskyOdessa/redo-c
 
 which is the fork of:
 
@@ -35,14 +35,15 @@ This goal reached.
 
 Another problem is deadlocking in case of parallel builds upon looped
 dependency tree. Proposed technique doesn't locks on the busy target, but
-returns with TARGET_BUSY exit code and releases the dependency tree to
+returns with DEPENDENCY_BUSY exit code and releases the dependency tree to
 make loop analysis possible for another process, and probably re-starting
 build process after the random delay, attempting to crawl over the whole tree
 when it will be released by another build processes.
-This will be available after job server implementation.
+The current version successfully solves this problem too.
 
 Andrey Dobrovolsky <andrey.dobrovolsky.odessa@gmail.com>
 */
+
 
 #define _GNU_SOURCE 1
 
@@ -60,6 +61,7 @@ Andrey Dobrovolsky <andrey.dobrovolsky.odessa@gmail.com>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 /* ------------------------------------------------------------------------- */
 /* from musl/src/crypt/crypt_sha256.c */
@@ -207,12 +209,16 @@ static void sha256_update(struct sha256 *s, const void *m, unsigned long len)
 /* ------------------------------------------------------------------------- */
 
 
-static const char redo_prefix[] =   ".redo.";
-static const char lock_prefix[] =   ".redo..redo.";
-static const char target_prefix[] = ".redo..redo..redo.";
+static const char redo_suffix[] =	".do";
+static const char trickpoint[]  =	".do.";
+static const char redo_prefix[] =	".do..";
+static const char lock_prefix[] =	".do...do..";
+static const char target_prefix[] =	".do...do...do..";
 
 static const char updir[] = "../";
 
+
+#define TRACK_DELIMITER ':'
 
 static char *
 track(const char *target, int track_op)
@@ -225,22 +231,22 @@ track(const char *target, int track_op)
 	static size_t track_buf_size = 0;	/* the whole track_buf size, sufficient for
 						holding initial REDO_TRACK and current target
 						full path */
-					      
+
 	size_t target_len, track_engaged, target_wd_offset;
 	char *target_wd, *ptr;
 
 	if (track_buf_size == 0) {				/* the very first invocation */
 		track_buf_size = PATH_MAX;
 		if (target)					/* suppose getenv("REDO_TRACK") */
-			track_buf_size += strlen (target);
-		track_buf = malloc (track_buf_size);
+			track_buf_size += strlen(target);
+		track_buf = malloc(track_buf_size);
 		if (!track_buf) {
 			perror("malloc");
 			exit (-1);
 		}
 		*track_buf = 0;
 		if (target)
-			strcpy (track_buf, target);
+			strcpy(track_buf, target);
 		track_op = 0;				/* enough for the first time */
 	}
 
@@ -248,7 +254,7 @@ track(const char *target, int track_op)
 		return track_buf;
 
 	if (!target) {					/* strip last path */
-		ptr = strrchr(track_buf, ':');
+		ptr = strrchr(track_buf, TRACK_DELIMITER);
 		if (ptr)
 			*ptr = 0;
 		return ptr;
@@ -261,7 +267,7 @@ track(const char *target, int track_op)
 
 	while (1) {
 		if (track_buf_size > track_engaged) {
-			target_wd = getcwd (track_buf + target_wd_offset, track_buf_size - track_engaged);
+			target_wd = getcwd(track_buf + target_wd_offset, track_buf_size - track_engaged);
 			if (target_wd)		/* getcwd successful */
 				break;
 		} else
@@ -269,7 +275,7 @@ track(const char *target, int track_op)
 
 		if (errno == ERANGE) {  /* track_buf_size is not sufficient */
 			track_buf_size += PATH_MAX;
-			track_buf = realloc (track_buf, track_buf_size);
+			track_buf = realloc(track_buf, track_buf_size);
 			if (!track_buf) {
 				perror("realloc");
 				return 0;
@@ -284,7 +290,7 @@ track(const char *target, int track_op)
 	*ptr++ = '/';
 	strcpy(ptr, target);
 
-	*--target_wd = ':';			/* join target full path with the track_buf */
+	*--target_wd = TRACK_DELIMITER;		/* join target full path with the track_buf */
 
 	/* searching for target full path inside track_buf */
 
@@ -296,7 +302,7 @@ track(const char *target, int track_op)
 		if (ptr == target_wd)
 			return target_wd + 1;
 		ptr += target_len;
-	} while (*ptr != ':');
+	} while (*ptr != TRACK_DELIMITER);
 
 	return 0;
 }
@@ -458,77 +464,146 @@ file_chdir(int *fd, const char *name)
 }
 
 
-int xflag, fflag, sflag, tflag, iflag, oflag = 0, nflag = 0, wflag = 0, eflag = 0, lflag;
+/*-------------------------------- Flags ------------------------------------*/
+
+int eflag = 0, sflag = 0, iflag, wflag, lflag;                   /* exported */
+int tflag = 0, dflag = 0, xflag, fflag;
+
+int  qflag;                                                      /* imported */
+
+int nflag = 0, uflag = 0, oflag = 0;      /* suppress sub-processes spawning */
+
+int stflag;                                                       /* derived */
+
+/*---------------------------------------------------------------------------*/
 
 
-/*
-dir/base.a.b
-	will look for dir/base.a.b.do,
-	dir/default.a.b.do, dir/default.b.do, dir/default.do,
-	default.a.b.do, default.b.do, and default.do.
+/*-------------------- find_dofile() logs examples --------------------------**
 
-this function assumes no / in target
-*/
+$ redo -w x.y
+>>>> /tmp/x.y
+x.y.do
+.y.do
+.do
+../.y.do
+../.do
+
+$ redo -we x.y.do
+>>>> /tmp/x.y.do
+x.y.do.do
+.y.do.do
+.do.do
+../.y.do.do
+../.do.do
+
+$ redo -wee .y.do
+>>>> /tmp/.y.do
+.y.do.do
+.do.do
+../.y.do.do
+../.do.do
+
+$ redo -w .x.y
+>>>> /tmp/.x.y
+.x.y.do
+.y.do
+.do
+../.x.y.do
+../.y.do
+../.do
+
+$ redo -w ''
+>>>> /tmp/
+.do
+../.do
+
+$ redo -w x.do.
+>>>> /tmp/x.do.
+x.do..do
+
+$ redo -w x.y.do.
+>>>> /tmp/x.y.do.
+x.y.do..do
+.y.do..do
+../.y.do..do
+
+**---------------------------------------------------------------------------*/
+
 
 static char *
-find_dofile(char *target, char *dofile_rel, size_t dofile_free, int *uprel, const char *slash)
+find_dofile(char *dep, char *dofile_rel, size_t dofile_free, int *uprel, const char *slash, int visible)
 {
-	static const char default_name[] = "default", suffix[] = ".do";
-	const char *name = "";
-	char *ext  = target; 
 	char *dofile = dofile_rel;
 
-	/* ".redo.*" can not be the target */ 
+	char *dep_end  = strchr(dep, '\0');
+	char *dep_ptr  = dep_end;
+	char *dep_tail = dep_end;
+	char *dep_trickpoint;
 
-	if (strncmp(target, redo_prefix, sizeof redo_prefix - 1) == 0)
-		return 0;
+	const char *suffix_ptr = redo_suffix + sizeof redo_suffix - 1;
 
-	/* we can suppress *.do or default*.do files doing */
+	size_t doname_size = (dep_end - dep) + sizeof redo_suffix;
 
-	if (strcmp(strchr(target,'\0') - sizeof suffix + 1, suffix) == 0) {
-		if (eflag < 1)
-			return 0;
-		if (strncmp(target, default_name, sizeof default_name - 1) == 0) {
-			if (eflag < 2)
-				return 0;
+	char *extension;
+
+
+	/* rewind .do tail inside dependency */
+
+	while (dep_ptr > dep) {
+		if (*--dep_ptr != *--suffix_ptr)
+			break;
+		if (suffix_ptr == redo_suffix) {
+			dep_tail = dep_ptr;
+			suffix_ptr += sizeof redo_suffix - 1;
 		}
 	}
 
-	if (dofile_free < (strlen(target) + sizeof suffix))
+	/* we can suppress dofiles or dotdofiles doing */
+
+	if (dep_tail != dep_end) {
+		if (eflag < 1)
+			return 0;
+		if ((*dep == '.') && (eflag < 2))
+			return 0;
+	}
+
+
+	if (dofile_free < doname_size)
 		return 0;
-	dofile_free -= sizeof suffix;
+	dofile_free -= doname_size;
+
+	dep_trickpoint = strstr(dep, trickpoint);
+
+	strcpy(dep_end, redo_suffix);
+
+	dep_ptr = dep;
+	extension = strchr(dep, '.');
+
+	visible = visible && wflag;
+
+	if (visible)
+		dprintf(1, ">>>> %s\n", slash);
 
 	for (*uprel = 0 ; slash ; (*uprel)++, slash = strchr(slash + 1, '/')) {
-		char *s = ext;
 
-		while (1) {
-			strcpy(stpcpy(stpcpy(dofile, name), s), suffix);
+		while ((dep_ptr != dep_trickpoint) || (dep_ptr == dep_tail)) {
+			strcpy(dofile, dep_ptr);
 
-			if (wflag)
-				fprintf(stdout, "%s\n", dofile_rel);
+			if (visible)
+				dprintf(1, "%s\n", dofile_rel);
 
-			if ((access(dofile_rel, F_OK) == 0) && (strcmp(target, dofile_rel) != 0 /* no self-doing */ )) {
-				if (*s == '.')
-					*s = '\0';
+			if (access(dofile_rel, F_OK) == 0) {
+				*dep_ptr = '\0';
 				return dofile;
 			}
 
-			if ((*s == 0) || ((name != default_name) && (*s == '.')))
+			if (dep_ptr == dep_tail)
 				break;
 
-			while (*++s && (*s != '.'));
-
-			if (name != default_name) {
-				size_t required = (sizeof default_name - 1) + strlen(s);
-
-				if (dofile_free < required)
-					return 0;
-				dofile_free -= required;
-
-				name = default_name;
-				ext = s;
-			}
+			while (*++dep_ptr != '.');
 		}
+
+		dep_ptr = extension;
 
 		if (dofile_free < (sizeof updir - 1))
 			return 0;
@@ -542,18 +617,20 @@ find_dofile(char *target, char *dofile_rel, size_t dofile_free, int *uprel, cons
 
 
 enum update_dep_errors {
-	TARGET_UPTODATE = 0,
-	TARGET_FCHDIR_FAILED = 1,
-	TARGET_WRDEP_FAILED = 2,
-	TARGET_RM_FAILED = 4,
-	TARGET_MV_FAILED = 8,
-	TARGET_BUSY = 0x10,
-	TARGET_TOOLONG = 0x20,
-	TARGET_REL_TOOLONG = 0x30,
-	TARGET_FORK_FAILED = 0x40,
-	TARGET_WAIT_FAILED = 0x50,
-	TARGET_NODIR = 0x60,
-	TARGET_LOOP = 0x70
+	DEPENDENCY_UPTODATE = 0,
+	DEPENDENCY_FCHDIR_FAILED = 1,
+	DEPENDENCY_WRDEP_FAILED = 2,
+	DEPENDENCY_RM_FAILED = 4,
+	DEPENDENCY_MV_FAILED = 8,
+	DEPENDENCY_BUSY = 0x10,
+	DEPENDENCY_ILLEGAL_SYM = 0x12,
+	DEPENDENCY_FAILURE = 0x18,
+	DEPENDENCY_TOOLONG = 0x20,
+	DEPENDENCY_REL_TOOLONG = 0x30,
+	DEPENDENCY_FORK_FAILED = 0x40,
+	DEPENDENCY_WAIT_FAILED = 0x50,
+	DEPENDENCY_NODIR = 0x60,
+	DEPENDENCY_LOOP = 0x70
 };
 
 #define DEP_ERRORS 0x7f
@@ -561,7 +638,8 @@ enum update_dep_errors {
 
 enum hints {
 	IS_SOURCE = 0x80,
-	UPDATED_RECENTLY = 0x100
+	UPDATED_RECENTLY = 0x100,
+	IMMEDIATE_DEPENDENCY = 0x200
 };
 
 #define HINTS (~DEP_ERRORS)
@@ -573,16 +651,16 @@ choose(const char *old, const char *new, int err)
 	if (err || nflag) {
 		if ((access(new, F_OK) == 0) && (remove(new) != 0)) {
 			perror("remove new");
-			err |= TARGET_RM_FAILED;
+			err |= DEPENDENCY_RM_FAILED;
 		}
 	} else {
 		if ((access(old, F_OK) == 0) && (remove(old) != 0)) {
 			perror("remove old");
-			err |= TARGET_RM_FAILED;
+			err |= DEPENDENCY_RM_FAILED;
 		}
 		if ((access(new, F_OK) == 0) && (rename(new, old) != 0)) {
 			perror("rename");
-			err |= TARGET_MV_FAILED;
+			err |= DEPENDENCY_MV_FAILED;
 		}
 	}
 
@@ -606,8 +684,8 @@ run_script(int dir_fd, int lock_fd, int nlevel, const char *dofile_rel,
 
 	target_rel = base_name(target_full, uprel);
 	if (strlen(target_rel) >= sizeof target_base_rel){
-		fprintf(stderr, "Target relative name too long -- %s\n", target_rel);
-		return TARGET_REL_TOOLONG;
+		dprintf(2, "Target relative name too long -- %s\n", target_rel);
+		return DEPENDENCY_REL_TOOLONG;
 	}
 
 	strcpy(target_base_rel, target_rel);
@@ -617,12 +695,13 @@ run_script(int dir_fd, int lock_fd, int nlevel, const char *dofile_rel,
 	target_new = (char *) base_name(target_new_rel, 0);
 	strcpy(stpcpy(target_new, target_prefix), target);
 
-	fprintf(stderr, "redo %*s %s # %s\n", nlevel * 2, "", target, dofile_rel);
+	if (!qflag)
+		dprintf(2, "redo %*s %s # %s\n", nlevel * 2, "", target, dofile_rel);
 
 	pid = fork();
 	if (pid < 0) {
 		perror("fork");
-		target_err = TARGET_FORK_FAILED;
+		target_err = DEPENDENCY_FORK_FAILED;
 	} else if (pid == 0) {
 
 		const char *dofile = file_chdir(&dir_fd, dofile_rel);
@@ -630,15 +709,14 @@ run_script(int dir_fd, int lock_fd, int nlevel, const char *dofile_rel,
 		size_t dirprefix_len = target_new - target_new_rel;
 
 		if (!dofile) {
-			fprintf(stderr, "Damn! Someone have stolen my favorite dofile %s ...\n", dofile_rel);
-			exit(TARGET_FCHDIR_FAILED);
+			dprintf(2, "Damn! Someone have stolen my favorite dofile %s ...\n", dofile_rel);
+			exit(DEPENDENCY_FCHDIR_FAILED);
 		}
 
 		memcpy(dirprefix, target_new_rel, dirprefix_len);
 		dirprefix[dirprefix_len] = '\0';
 
 		if ((setenvfd("REDO_LOCK_FD", lock_fd) != 0) ||
-		    (setenvfd("REDO_LEVEL", nlevel + 1) != 0) ||
 		    (setenv("REDO_DIRPREFIX", dirprefix, 1) != 0) ||
 		    (setenv("REDO_TRACK", track(0, 0), 1) != 0)) {
 			perror("setenv");
@@ -657,13 +735,16 @@ run_script(int dir_fd, int lock_fd, int nlevel, const char *dofile_rel,
 	} else {
 		if (wait(&target_err) < 0) {
 			perror("wait");
-			target_err = TARGET_WAIT_FAILED;
+			target_err = DEPENDENCY_WAIT_FAILED;
 		} else {
-			if (WIFEXITED(target_err))
-				target_err = WEXITSTATUS(target_err);
+			target_err = WIFEXITED(target_err) ?
+					WEXITSTATUS(target_err) :
+					DEPENDENCY_FAILURE ;
 		}
 	}
-	fprintf(stderr, "     %*s %s # %s -> %d\n", nlevel * 2, "", target, dofile_rel, target_err);
+
+	if (!qflag)
+		dprintf(2, "     %*s %s # %s -> %d\n", nlevel * 2, "", target, dofile_rel, target_err);
 
 	return choose(target, target_new, target_err);
 }
@@ -675,12 +756,12 @@ check_record(char *line)
 	int line_len = strlen(line);
 
 	if (line_len < HEXHASH_LEN + 1 + HEXDATE_LEN + 1 + 1) {
-		fprintf(stderr, "Warning: dependency record too short. Target will be rebuilt.\n");
+		dprintf(2, "Warning: dependency record too short. Target will be rebuilt.\n");
 		return 0;
 	}
 
 	if (line[line_len - 1] != '\n') {
-		fprintf(stderr, "Warning: dependency record truncated. Target will be rebuilt.\n");
+		dprintf(2, "Warning: dependency record truncated. Target will be rebuilt.\n");
 		return 0;
 	}
 
@@ -720,14 +801,19 @@ find_record(const char *filename)
 }
 
 
+#define may_need_rehash(f,h) ((h & IS_SOURCE) || ((!(h & UPDATED_RECENTLY)) && find_record(f)))
+
 
 static int
-dep_changed(const char *line, int hint, int is_target)
+dep_changed(const char *line, int hint, int is_target, int has_deps, int visible)
 {
 	const char *filename = line + HEXHASH_LEN + 1 + HEXDATE_LEN + 1;
 	int fd;
 
-	if ((hint & IS_SOURCE) || (((hint & UPDATED_RECENTLY) == 0) && (find_record(filename) != 0))){
+	if (uflag && (!oflag))
+		return 0;
+
+	if (may_need_rehash(filename, hint)) {
 		if (strncmp(line + HEXHASH_LEN + 1, datefilename(filename), HEXDATE_LEN) == 0)
 			return 0;
 
@@ -742,18 +828,23 @@ dep_changed(const char *line, int hint, int is_target)
 	if (strncmp(line, hexhash, HEXHASH_LEN) == 0)
 		return 0;
 
-	if (oflag) {
-		if (hint == IS_SOURCE) {
-			filename = track(0, 0);
-			if (is_target && tflag)
-				fprintf(stdout, "%s\n", strrchr(filename, ':') + 1);
-			if ((!is_target) && sflag)
-				fprintf(stdout, "%s\n", strchr(filename, '\0') + 1);
-		}
-		return 0;
+	if (!uflag)
+		return 1;
+
+	if (	(is_target ? (has_deps ? tflag : stflag) : sflag) &&
+		/* oflag && */ /* implicit */
+		visible &&
+		(hint & IS_SOURCE)	)
+	{
+		const char *track_buf = track(0, 0);
+		const char *name = is_target ?
+					strrchr(track_buf, TRACK_DELIMITER) :
+					strchr(track_buf, '\0') ;
+
+		dprintf(1, "%s\n", name + 1);
 	}
 
-	return 1;
+	return 0;
 }
 
 
@@ -765,7 +856,7 @@ write_dep(int lock_fd, const char *file, const char *dp, const char *updir, int 
 	const char *prefix = "";
 
 
-	if ((hint & IS_SOURCE) || (((hint & UPDATED_RECENTLY) == 0) && (find_record(file) != 0))){
+	if (may_need_rehash(file, hint)) {
 		fd = open(file, O_RDONLY);
 		hashfile(fd);
 		datefile(fd);
@@ -786,7 +877,7 @@ write_dep(int lock_fd, const char *file, const char *dp, const char *updir, int 
 	hexdate[HEXDATE_LEN] = 0;
 	if (dprintf(lock_fd, "%s %s %s%s\n", hexhash, hexdate, prefix, file) < 0) {
 		perror("dprintf");
-		err = TARGET_WRDEP_FAILED;
+		err = DEPENDENCY_WRDEP_FAILED;
 	}
 
 	return err;
@@ -807,7 +898,7 @@ do_update_dep(int dir_fd, const char *dep_path, int nlevel, int *hint)
 	if (dir_fd != dep_dir_fd) {
 		if (fchdir(dir_fd) < 0) {
 			perror("chdir back");
-			dep_err |= TARGET_FCHDIR_FAILED;
+			dep_err |= DEPENDENCY_FCHDIR_FAILED;
 		}
 		close(dep_dir_fd);
 	}
@@ -818,62 +909,102 @@ do_update_dep(int dir_fd, const char *dep_path, int nlevel, int *hint)
 }
 
 
+#define NAME_MAX 255
+
+
 static int
 update_dep(int *dir_fd, const char *dep_path, int nlevel)
 {
-	const char *target;
-	char *target_full, target_base[PATH_MAX];
+	const char *dep;
+	char *target_full, target_base[NAME_MAX + 1];
 
-	char dofile_rel [PATH_MAX];
+	char dofile_rel[PATH_MAX];
 
-	int uprel;
+	int uprel = 0;			/* -Wno-maybe-uninitialized uprel */
 
-	char redofile[PATH_MAX + sizeof redo_prefix];
-	char lockfile[PATH_MAX + sizeof lock_prefix];
+	char redofile[NAME_MAX + 1];
+	char lockfile[NAME_MAX + 1];
 
-	int lock_fd, dep_err = 0, wanted = 1;
+	int lock_fd, dep_err = 0, wanted = 1, has_deps = 0, is_source = 0;
 
 	FILE *fredo;
 
+	int  visible = !dflag;
 
-	target = file_chdir(dir_fd, dep_path);
-	if (target == 0) {
-		fprintf(stderr, "Missing dependency directory -- %s\n", dep_path);
+
+	if (dflag > 0)
+		visible = (nlevel == (dflag - 1));
+
+	if (dflag < 0)
+		visible = (nlevel < (-dflag));
+
+
+	if (strchr(dep_path, TRACK_DELIMITER)) {
+		dprintf(2, "Illegal \':\' symbol in  -- %s\n", dep_path);
+		return DEPENDENCY_ILLEGAL_SYM;
+	}
+
+	dep = file_chdir(dir_fd, dep_path);
+	if (dep == 0) {
+		dprintf(2, "Missing dependency directory -- %s\n", dep_path);
 		track("", 1);	/* dummy call */
-		return TARGET_NODIR;
+		return DEPENDENCY_NODIR;
 	}
 
-	target_full = track(target, 1);
+	if (strlen(dep) > (sizeof target_base - sizeof target_prefix)) {
+		dprintf(2, "Dependency name too long -- %s\n", dep);
+		return DEPENDENCY_TOOLONG;
+	}
+
+	target_full = track(dep, 1);
 	if (target_full == 0){
-		fprintf(stderr, "Dependency loop attempt -- %s\n", dep_path);
-		return lflag ? IS_SOURCE : TARGET_LOOP;
+		dprintf(2, "Dependency loop attempt -- %s\n", dep_path);
+		return lflag ? IS_SOURCE : DEPENDENCY_LOOP;
 	}
 
-	if (strlen(target) >= sizeof target_base) {
-		fprintf(stderr, "Dependency name too long -- %s\n", target);
-		return TARGET_TOOLONG;
+	strcpy(target_base, dep);
+	strcpy(stpcpy(redofile, redo_prefix), dep);
+	strcpy(stpcpy(lockfile, lock_prefix), dep);
+
+	if (strncmp(dep, redo_prefix, sizeof redo_prefix - 1) == 0) {
+		is_source = 1;
+	} else if (uflag) {
+		is_source = access(redofile, F_OK);
+	} else if (!find_dofile(target_base, dofile_rel, sizeof dofile_rel,
+						&uprel, target_full, visible))
+	{
+		lock_fd = open(lockfile, O_CREAT | O_WRONLY | (iflag ? 0 : O_EXCL), 0666);
+		if (lock_fd < 0) {
+			/* dprintf(2, "Dependency busy -- %s\n", dep); */
+			return DEPENDENCY_BUSY;
+		}
+
+		remove(redofile);
+		close(lock_fd);
+		remove(lockfile);
+		is_source = 1;
 	}
 
-	strcpy(target_base, target);
-	if (!find_dofile(target_base, dofile_rel, sizeof dofile_rel, &uprel, target_full)) {
-		if (sflag && (!oflag))
-			printf("%s\n", target_full);
+	if (is_source) {
+		if (sflag && (!oflag) && visible)
+			dprintf(1, "%s\n", target_full);
 		return IS_SOURCE;
 	}
 
-	if (tflag && (!oflag))
-		printf("%s\n", target_full);
-
-	strcpy(stpcpy(redofile, redo_prefix), target);
 	if (strcmp(datefilename(redofile), datebuild()) >= 0)
-		return TARGET_UPTODATE;
+		return DEPENDENCY_UPTODATE;
 
-	strcpy(stpcpy(lockfile, lock_prefix), target);
 
 	lock_fd = open(lockfile, O_CREAT | O_WRONLY | (iflag ? 0 : O_EXCL), 0666);
 	if (lock_fd < 0) {
-		fprintf(stderr, "Target busy -- %s\n", target);
-		return TARGET_BUSY;
+		/* dprintf(2, "Target busy -- %s\n", dep); */
+		return DEPENDENCY_BUSY | IMMEDIATE_DEPENDENCY;
+	}
+
+	if (uflag) {
+		struct stat redo_st;
+		stat(redofile, &redo_st);
+		chmod(redofile, redo_st.st_mode);	/* touch ctime */
 	}
 
 	fredo = fopen(redofile,"r");
@@ -884,18 +1015,21 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 		int is_dofile = 1;
 
 		while (fgets(line, sizeof line, fredo) && check_record(line)) {
-			int is_target = !strcmp(filename, target);
+			int is_target = !strcmp(filename, dep);
 			int hint = IS_SOURCE;
 
-			if (is_dofile && strcmp(filename, dofile_rel))
+			if (is_dofile && (!uflag) && strcmp(filename, dofile_rel))
 				break;
+
+			if (!is_target) {
+				if (!is_dofile)
+					has_deps = 1;
+				dep_err = do_update_dep(*dir_fd, filename, nlevel + 1, &hint);
+			}
 
 			is_dofile = 0;
 
-			if (!is_target)
-				dep_err = do_update_dep(*dir_fd, filename, nlevel + 1, &hint);
-
-			if (dep_err || dep_changed(line, hint, is_target))
+			if (dep_err || dep_changed(line, hint, is_target, has_deps, visible))
 				break;
 
 			memcpy(hexhash, line, HEXHASH_LEN);
@@ -912,6 +1046,7 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 		fclose(fredo);
 	}
 
+	target_full = strrchr(track(0, 0), TRACK_DELIMITER) + 1;
 
 	if (!nflag && !dep_err && wanted) {
 		lseek(lock_fd, 0, SEEK_SET);
@@ -919,14 +1054,23 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 		dep_err = write_dep(lock_fd, dofile_rel, 0, 0, 0);
 
 		if (!dep_err) {
-			dep_err = run_script(*dir_fd, lock_fd, nlevel, dofile_rel, target, target_base, target_full, uprel);
+			off_t deps_pos = lseek(lock_fd, 0, SEEK_CUR);
+
+			dep_err = run_script(*dir_fd, lock_fd, nlevel, dofile_rel,
+					dep, target_base, target_full, uprel);
+
+			if (lseek(lock_fd, 0, SEEK_CUR) != deps_pos)
+				has_deps = 1;
 
 			if (!dep_err)
-				dep_err = write_dep(lock_fd, target, 0, 0, IS_SOURCE);
+				dep_err = write_dep(lock_fd, dep, 0, 0, IS_SOURCE);
 		}
 	}
 
 	close(lock_fd);
+
+	if ((has_deps ? tflag : stflag) && (!oflag) && visible)
+		dprintf(1, "%s\n", target_full);
 
 /*
 	Now we will use target_full residing in track to construct
@@ -935,6 +1079,8 @@ update_dep(int *dir_fd, const char *dep_path, int nlevel)
 */
 
 	strcpy((char *) base_name(target_full, 0), lockfile);
+
+	dep_err &= ~IMMEDIATE_DEPENDENCY;
 
 	return choose(redofile, target_full, dep_err) | UPDATED_RECENTLY;
 }
@@ -946,18 +1092,6 @@ envint(const char *name)
 	char *s = getenv(name);
 
 	return s ? strtol(s, 0, 10) : 0;
-}
-
-
-static int
-envfd(const char *name)
-{
-	int fd = envint(name);
-
-	if (fd <= 0 || fd >= sysconf(_SC_OPEN_MAX))
-		fd = -1;
-
-	return fd;
 }
 
 
@@ -988,21 +1122,79 @@ keepdir()
 }
 
 
+static int
+occurrences(const char *str, int ch)
+{
+	int n = 0;
+
+	while (str) {
+		str = strchr(str, ch);
+		if (str) {
+			n++;
+			if (ch == 0)
+				break;
+			str++;
+		}
+	}
+
+	return n;
+}
+
+
+#define RETRIES_DEFAULT 10
+
+#define SHORTEST 10
+#define LONGEST  (SHORTEST << RETRIES_DEFAULT)
+
+#define MSEC_PER_SEC  1000
+#define NSEC_PER_MSEC 1000000
+
+static void
+hurry_up_if(int successful)
+{
+	static int night = SHORTEST;
+	int asleep;
+	struct timespec s, r;
+
+	if (successful) {
+		night = SHORTEST;
+		return;
+	}
+
+	asleep = (rand() % night) + 1;
+
+	if (night < LONGEST)
+		night *= 2;
+
+	s.tv_sec  =  asleep / MSEC_PER_SEC; 
+	s.tv_nsec = (asleep % MSEC_PER_SEC) * NSEC_PER_MSEC;
+
+	nanosleep(&s, &r);
+}
+
+
 int
 main(int argc, char *argv[])
 {
-	int opt, i;
+	int opt, deps_done = 0, lock_fd = -1;
+
 	const char *dirprefix;
 	char updir[PATH_MAX];
-	int main_dir_fd, lock_fd;
-	int level;
-	int dep_err, redo_err = 0, hint;
+	int level, main_dir_fd;
+	int deps_todo, retries, attempts;
 
-	const char *program = base_name(argv[0], 0);
+	int *exit_code, i;
+
+
+	if (strcmp(base_name(argv[0], 0), "depends-on") == 0) {
+		lock_fd = envint("REDO_LOCK_FD");
+	}
 
 	opterr = 0;
 
-	while ((opt = getopt(argc, argv, "+owlfixnest")) != -1) {
+	while ((opt = getopt(argc, argv, "+tuxownsfield:")) != -1) {
+		char *tail;
+
 		switch (opt) {
 		case 'x':
 			setenvfd("REDO_TRACE", 1);
@@ -1011,78 +1203,123 @@ main(int argc, char *argv[])
 			setenvfd("REDO_FORCE", 1);
 			break;
 		case 's':
-			setenvfd("REDO_LIST_SOURCES", 1);
+			setenvfd("REDO_LIST_SOURCES", ++sflag);
 			break;
 		case 't':
-			setenvfd("REDO_LIST_TARGETS", 1);
+			setenvfd("REDO_LIST_TARGETS", ++tflag);
 			break;
 		case 'o':
-			oflag = 1;
+			oflag = 1;	/* implies "-u" */
+		case 'u':
+			uflag = 1;	/* implies "-n" */
+		case 'n':
 			nflag = 1;
 			break;
 		case 'i':
 			setenvfd("REDO_IGNORE_LOCKS", 1);
 			break;
-		case 'n':
-			nflag = 1;
-			break;
 		case 'w':
-			wflag = 1;
+			setenvfd("REDO_WHICH_DO", 1);
 			break;
 		case 'e':
-			if (eflag < 2)
-				setenvfd("REDO_DOFILES", ++eflag);
+			setenvfd("REDO_DOFILES", ++eflag);
 			break;
 		case 'l':
 			setenvfd("REDO_LOOP_WARN", 1);
 			break;
+		case 'd':
+			dflag = strtol(optarg, &tail, 10);
+			if (tail != optarg) {
+				setenvfd("REDO_DEPTH", dflag);
+				break;
+			}
 		default:
-			fprintf(stderr, "Usage: redo [-loftsexwine]  [TARGETS...]\n");
+			dprintf(2, "Usage: redo [-sweetlinuxsoft] [-d depth] [TARGETS...]\n");
 			exit(1);
 		}
 	}
 	argc -= optind;
 	argv += optind;
 
+	if (argc == 0)
+		return 0;
+
+
+	exit_code = malloc(argc * sizeof (int));
+	if (!exit_code) {
+		perror("malloc");
+		exit(-1);
+	}
+
+	for (i = 0; i < argc; i++)
+		exit_code[i] = DEPENDENCY_BUSY;
+
 	fflag = envint("REDO_FORCE");
 	xflag = envint("REDO_TRACE");
 	sflag = envint("REDO_LIST_SOURCES");
 	tflag = envint("REDO_LIST_TARGETS");
 	iflag = envint("REDO_IGNORE_LOCKS");
+	wflag = envint("REDO_WHICH_DO");
 	eflag = envint("REDO_DOFILES");
 	lflag = envint("REDO_LOOP_WARN");
+	dflag = envint("REDO_DEPTH");
 
-	lock_fd = envfd("REDO_LOCK_FD");
-	level = envint("REDO_LEVEL");
+	qflag = envint("REDO_SILENT");
+
+	stflag = sflag && tflag;
+	if (stflag) {
+		sflag--;
+		tflag--;
+	}
+
 	dirprefix = getenv("REDO_DIRPREFIX");
-
-	track(getenv("REDO_TRACK"), 0);
-
 	compute_updir(dirprefix, updir);
+
+	level = occurrences(track(getenv("REDO_TRACK"), 0), TRACK_DELIMITER);
+
+	retries = envint("REDO_RETRIES");
+	unsetenv("REDO_RETRIES");
+
+	if ((lock_fd < 0) && (retries == 0))
+		retries = RETRIES_DEFAULT;
+	attempts = retries;
+
+	deps_todo = argc;
 
 	datebuild();
 
 	main_dir_fd = keepdir();
 
-	for (i = 0 ; i < argc ; i++) {
+	srand(getpid());
 
-		dep_err = do_update_dep(main_dir_fd, argv[i], level, &hint);
-		
-		if(dep_err == 0) {
-			if (lock_fd > 0) {
-				dep_err = write_dep(lock_fd, argv[i], dirprefix, updir, hint);
-				if (dep_err)
-					return dep_err;
+	do {
+		hurry_up_if(attempts == retries); attempts--;
+
+		for (i = 0; i < argc ; i++) {
+			if (exit_code[i]) {
+				int redo_err, hint;
+
+				redo_err = do_update_dep(main_dir_fd, argv[i], level, &hint);
+
+				if ((redo_err == 0) && (lock_fd > 0))
+					redo_err = write_dep(lock_fd, argv[i], dirprefix, updir, hint);
+
+				if (redo_err & (~DEPENDENCY_BUSY))
+					return redo_err;
+
+				if (redo_err == 0) {
+					exit_code[i] = 0;
+					deps_done++;
+					attempts = retries;
+				} else /* DEPENDENCY_BUSY */ if (hint & IMMEDIATE_DEPENDENCY) {
+					exit_code[i] = 0;
+					deps_todo--;		/* forget it */
+				}
 			}
-		} else if(dep_err == TARGET_BUSY) {
-			redo_err = TARGET_BUSY;
-		} else
-			return dep_err;
-	}
+		}
+	} while ((deps_done < deps_todo) && (attempts > 0));
 
-	if (strcmp(program, "redo-always") == 0)
-		dprintf(lock_fd, "Impossible hash of impossible file, which will become up-to-date never ever       .redo..redo..redo..redo.\n");
 
-	return redo_err;
+	return (deps_done < argc) ? DEPENDENCY_BUSY : 0;
 }
 

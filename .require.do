@@ -1,7 +1,7 @@
 #!/usr/bin/env lua
 
 -- The purpose of this script is to compile "arg[2].c", mark all
--- immediate dependencies with "redo" and collect all recursive
+-- immediate dependencies with "depends-on" and collect all recursive
 -- dependencies in "arg[2].require"
 
 --------- Editable ---------
@@ -33,7 +33,7 @@ local Assert = function(cmd, msg)
 end
 
 
-Assert("redo " .. FName)
+Assert("depends-on " .. FName)
 
 local f = assert(io.open(FName))
 local Cflags = assert(f:read())
@@ -66,7 +66,7 @@ local IList = table.concat(INames, " ")
 local RList = table.concat(RNames, " ")
 local AllDeps = table.concat({CName, OName, IList, RList}, " ")
 
-Assert("redo " .. AllDeps)
+Assert("depends-on " .. AllDeps)
 
 
 local Sanitize = function(P)
@@ -99,9 +99,13 @@ end
 
 for i, rn in ipairs(RNames) do
   local RDir = rn:match(".*/", TNameStart) or ""
-  for r in io.lines(rn) do
-    local n = r:match("%.o$") and Sanitize(RDir .. r) or r
-    DepNames[n] = true
+  local fr = io.open(rn)
+  if fr then
+    for r in fr:lines() do
+      local n = r:match("%.o$") and Sanitize(RDir .. r) or r
+      DepNames[n] = true
+    end
+    fr:close()
   end
 end
 

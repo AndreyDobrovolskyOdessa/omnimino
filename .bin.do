@@ -10,15 +10,10 @@ local Libs = ""
 
 local BinName = arg[2]
 
-local CName = arg[2] .. ".c"
-local RName = arg[2] .. ".require"
-
--- if arg[2] == "main" then current directory name
--- is used as the output binary name
-
 local TDir, TName = arg[2]:match("(.-)([^/]*)$")
 
-if TName == "main" then
+if TName == "" then
+  TName = "main"
   local DirName = TDir
   if DirName == "" then
     local f = assert(io.popen("pwd"))
@@ -27,6 +22,9 @@ if TName == "main" then
   end
   BinName = TDir .. DirName:match("([^/]*)/$")
 end
+
+local CName = TDir .. TName .. ".c"
+local RName = TDir .. TName .. ".require"
 
 
 local Assert = function(cmd, msg)
@@ -42,7 +40,7 @@ end
 
 Assert("test -e " .. CName, "Missing " .. CName)
 
-Assert("redo " .. RName)
+Assert("depends-on " .. RName)
 
 local RUniq = {}
 local DUniq = {}
@@ -64,7 +62,7 @@ if DList ~= "" then
   assert(f:close())
 end
 
-Assert("redo " .. RList)
+Assert("depends-on " .. RList)
 Assert(Linker .. " -o " .. BinName .. " " .. RList .. " " .. Libs)
-Assert("redo " .. BinName)
+Assert("depends-on " .. BinName)
 

@@ -48,19 +48,19 @@ omniplay.c:
 
 Random sequence of figures is placed inside rectangular glass, using movements, rotations, mirror (vertical) and circlar shifts of the figures' queue (if enabled).
 
-Figure is a set of blocks with fixed ralative placement. Number of blocks in each figure can vary from FigureWeightMax down to FigureWeightMin (these are game parameters, defined in game record file).
+Figure is a set of blocks with fixed relative placement. Number of blocks in each figure can vary from FigureWeightMax down to FigureWeightMin (these are game parameters, defined in game record file).
 
-Figures can be generated using aperture, or using natural neighbourship. This is defined by Aperture parameter value. If it is 0, figure blocks are choosed as neighbours. If it is non-zero, aperture is filled with independently placed blocks, which can be separated in space.
+Figures can be generated using aperture, or using natural neighbourship. This is defined by Aperture parameter value. If it is 0, figure blocks are chosen as neighbours. If it is non-zero, aperture is filled with independently placed blocks, which can be separated in space.
 
-Another game figures' sequence parameter is Metric. Metric = 0 means, that block have 4 neighbours, Metric=1 means 8 neighbours. This is for Aperture=0 case.
+Another game figures' sequence parameter is Metric. Metric = 0 means, that block have 4 neighbours, Metric = 1 means 8 neighbours. This is for Aperture = 0 case.
 
-If Aperture is non-zero, Metric=1 means square aperture with side length of value of Aperture parameter, in case Metric=0 this square loose its corners.
-
-
-Examples of Aperture=5
+If Aperture is non-zero, Metric = 1 means square aperture with side length of value of Aperture parameter, in case Metric = 0 this square loose its corners.
 
 
-Metric=1
+Examples of Aperture = 5
+
+
+Metric = 1
 
 1 1 1 1 1\
 1 1 1 1 1\
@@ -69,7 +69,7 @@ Metric=1
 1 1 1 1 1
 
 
-Metric=0
+Metric = 0
 
 0 0 1 0 0\
 0 1 1 1 0\
@@ -81,10 +81,10 @@ Metric=0
 So parameters, influencing random figures sequence are:
 
 
-Aperture (0-MAX_FIGURE_WEIGHT)\
-Metric (0,1)\
-FigureWeightMax (1-MAX_FIGURE_WEIGHT)\
-FigureWeightMin (1-FigureWeightMax)
+Aperture (0 - MAX_FIGURE_SIZE)\
+Metric (0, 1)\
+FigureWeightMax (1 - MAX_FIGURE_SIZE)\
+FigureWeightMin (1 - FigureWeightMax)
 
 
 Gameplay options:
@@ -112,7 +112,7 @@ GlassHeight\
 GlassFillLevel\
 GlassFillRatio (number of blocks in each prefilled row)
 
-GlassFillRatio == 0 assumes that prefill values are present below in the .mino file (line 17) and will be constant, not created randomly (see "omnifill" utility).
+GlassFillRatio = 0 assumes that prefill values are present below in the .mino file (line 17) and will be constant, not created randomly (see "omnifill" utility).
 
 The set of 13 parameters is used to create game record file. 
 
@@ -250,7 +250,7 @@ Of course You need Lua installed in Your system.
 
 ### omnifill
 
-Utility intended for editing constant prefill of the preset files (FillRatio == 0). Uses any preset .mino file as the template. Editing takes place as omnimino game with single-block figures with Gravity = 0. In case of exit with save ('x' command) new preset file is written with the glass gathered field as the glass field preset. Retuns 0 in case valid preset file was successfully loaded, modified and successfully saved. In all other cases returns 1.
+Utility intended for editing constant prefill of the preset files (FillRatio = 0). Uses any preset .mino file as the template. Editing takes place as omnimino game with single-block figures with Gravity = 0. In case of exit with save ('x' command) new preset file is written with the glass gathered field as the glass field preset. Retuns 0 in case valid preset file was successfully loaded, modified and successfully saved. In all other cases returns 1.
 
 Usage:
 

@@ -40,7 +40,7 @@ struct OmniParms {
   unsigned int WeightMax;
   unsigned int WeightMin;
   unsigned int Gravity;
-  unsigned int SingleLayer; /* single-layer, moving figure can not overlap placed blocks */
+  unsigned int SingleLayer; /* moving figure can not overlap placed blocks */
   unsigned int DiscardFullRows;
   unsigned int Goal;
   unsigned int GlassWidth;

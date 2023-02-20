@@ -9,7 +9,7 @@ Console game inspired by polymino puzzle
 
 ## Usage
 
-omnimino infile
+    omnimino infile
 
 
 ## Build

@@ -127,7 +127,7 @@ end
 Var.WeightMin.check = function(weight)
   local weight_max = Var.WeightMax()
   if type(weight) ~= "number" or weight < 1 or weight > weight_max then
-    weight = math.random(2, weight_max)
+    weight = math.random(1, weight_max)
   end
   return weight
 end

@@ -1,7 +1,7 @@
 # Omnimino
 
 
-![Simple omnimino](/samples/3.png)
+![Simple omnimino](/samples/1.png)
 
 
 Console game inspired by polymino puzzle
@@ -238,7 +238,7 @@ Create new game record instance according to p1.mino preset.
 
     echo x | ./omnimino p2.mino | cat
 
-Create new game instance and see its description in Lua notation..
+Create new game instance and see its description in Lua notation.
 
 
 Although You can take a look at
@@ -259,6 +259,15 @@ Usage:
 Preset file is named according to its content md5 sum with ".preset" suffix added. You can change the newly created file name with the help of for example
 
     ./omnifill old.preset.mino && mv $(./fre.sh) new.preset.mino 
+
+
+### randomino.lua
+
+Utility intended for creating some random playable .mino parameters file.
+
+Usage: lua randomino.lua template.lua > new.mino
+
+Lua 5.4 recommended.
 
 
 Andrey Dobrovolsky <andrey.dobrovolsky.odessa@gmail.com>

@@ -265,9 +265,13 @@ Preset file is named according to its content md5 sum with ".preset" suffix adde
 
 Utility intended for creating some random playable .mino parameters file.
 
-Usage: lua randomino.lua template.lua > new.mino
+Usage:
+
+    lua randomino.lua template.lua > new.mino
 
 Lua 5.4 recommended.
+
+
 
 
 Andrey Dobrovolsky <andrey.dobrovolsky.odessa@gmail.com>

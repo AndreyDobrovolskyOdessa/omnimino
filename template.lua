@@ -8,11 +8,13 @@
 
 local Var = ...
 
+local lowest_weight = 3
+
 Var.WeightMax.init = function()
-  return math.random(3, Var.Config().MaxFigureSize)
+  return math.random(lowest_weight, Var.Config().MaxFigureSize)
 end
 
-Var.WeightMin.init = 3
+Var.WeightMin.init = lowest_weight
 
 Var.Aperture.init = function()
   local weight = Var.WeightMax()
@@ -50,7 +52,6 @@ Var.GlassHeight.init = function()
 end
 
 Var.DiscardFullRows.init = function()
-  -- if Var.Goal() == 1 or Var.SingleLayer() == 1 then
   if Var.Goal() == 1 then
     return 1
   end
@@ -64,7 +65,7 @@ Var.FillLevel.init = function()
 end
 
 Var.FillRatio.init = function()
-  local ratio = Var.FigureSize() + 2
+  local ratio = Var.GlassWidth() - 1 - (Var.WeightMax() - lowest_weight)
 
   if Var.SingleLayer() > 0 then
     ratio = ratio // 2

@@ -14,7 +14,15 @@ Var.WeightMax.init = function()
   return math.random(lowest_weight, Var.Config().MaxFigureSize)
 end
 
-Var.WeightMin.init = lowest_weight
+Var.WeightMin.init = function()
+  local bottom = lowest_weight - (Var.WeightMax() - lowest_weight)
+
+  if bottom < 1 then bottom = 1 end
+
+  if Var.Goal() == 1 then bottom = lowest_weight end
+
+  return math.random(bottom, Var.WeightMax())
+end
 
 Var.Aperture.init = function()
   local weight = Var.WeightMax()
@@ -30,9 +38,9 @@ Var.Aperture.init = function()
     [1] = {1, 2, 4, 4, 5, 5, 5, 5}
   }
 
-  local aperture = math.random(weight == 3 and 1 or 0, 1)
+  local aperture = 0
 
-  if aperture > 0 then
+  if weight == lowest_weight or math.random(0, 1) == 1 then
     aperture = math.random(ap_min[metric][weight], ap_max[metric][weight])
   end
 

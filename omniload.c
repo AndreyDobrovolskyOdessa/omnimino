@@ -175,7 +175,7 @@ static int CheckFigures(void) {
     if (FW > WeightMax) {
       snprintf(MsgBuf, OM_STRLEN, "[18] Weight[%d] (%d) > WeightMax (%d)", i, FW, WeightMax); return 1;
     }
-    if ((F[0] - Block) >= (int)TotalArea) {
+    if (FixedSequence && ((F[0] - Block) >= (int)TotalArea)) {
       snprintf(MsgBuf, OM_STRLEN, "[18] Figure[%d] is unnecessary.", i); return 1;
     }
   }

@@ -38,7 +38,7 @@ void Report(struct Omnimino *G) {
 }
 
 
-#define COPYRIGHT "Omnimino 0.6 Copyright (C) 2019-2023 Andrey Dobrovolsky\n\n"
+#define COPYRIGHT "Omnimino 0.6.1 Copyright (C) 2019-2024 Andrey Dobrovolsky\n\n"
 #define USAGE "Usage: omnimino infile\n       ls *.mino | omnimino > outfile\n\n"
 
 

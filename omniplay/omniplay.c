@@ -6,7 +6,7 @@
 #include "../omnitype.h"
 
 #include "../omnifunc.h"
-#include "../omnimino.h"
+#include "../omnigame.h"
 #include "../omninew.h"
 
 

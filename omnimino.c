@@ -2,7 +2,7 @@
 	Omnimino is console version of polymino puzzle.
 	Figure sizes, shapes, field size and gameplay options can be varied.
 
-	Copyright (C) 2019-2022 Andrey Dobrovolsky
+	Copyright (C) 2019-2024 Andrey Dobrovolsky
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,202 +23,137 @@
  SOFTWARE.
 ******************************************************************************/
 
+#define _GNU_SOURCE 1
+
+#include <features.h>
+
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
 #include "omnitype.h"
 
-#include <string.h>
-#include <limits.h>
+#include "omnigame.h"
+#include "omniload.h"
+#include "omniplay/omniplay.h"
+#include "omnisave.h"
+#include "omnilua.h"
+#include "omninew.h"
 
-#include "omnifunc.h"
-#include "omnimino.h"
-
-/**************************************
-
-           Game
-
-**************************************/
-
-static struct Omnimino *GG;
-
-#include "omnimino.def"
+#define stringize(s) stringyze(s)
+#define stringyze(s) #s
 
 
-static void FitWidth(struct Coord *B, int *Err){
-  (*Err) = (*Err) || (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth);
-}
-
-static void FitHeight(struct Coord *B, int *Err){
-  (*Err) = (*Err) || (((B->y)>>1) < 0) || (((B->y)>>1) >= (int)FieldSize);
-}
-
-void FitGlass(struct Coord *B, int *Err){
-  FitWidth(B,Err);
-  FitHeight(B,Err);
-}
-
-void AndGlass(struct Coord *B, int *Err){
-  (*Err) = (*Err) || ( GlassRow[(B->y)>>1] & (1<<((B->x)>>1)) );
-}
-
-static void PlaceIntoGlass(struct Coord *B, int *V){
-  (void) V;
-  GlassRow[(B->y)>>1] |= (1<<((B->x)>>1));
-}
-
-static void CountInner(struct Coord *B, int *Cnt){
-  if (((B->y)>>1) < (int)GlassHeight)
-    (*Cnt)++;
-}
-
-
-/**************************************
-
-        Various game functions
-
-**************************************/
-
-static void ClearFullRows(unsigned int From, unsigned int To) {
-  unsigned int r, w, FullRowNum;
-
-  unsigned int Upper = GlassLevel;
-
-  if (Goal == FLAT_GOAL)
-    Upper--;
-
-  if (To < Upper)
-    Upper = To;
-
-  for(r = w = From ; r < Upper ; r++){
-    if (GlassRow[r] != FullRow)
-      GlassRow[w++] = GlassRow[r];
+void Report(struct Omnimino *G) {
+  if ((G->V.GameType != 3) && (G->D.LastFigure != G->M.Figure)) { /* game data present */
+    int Score = G->V.EmptyCells;
+    if (G->P.Goal != FILL_GOAL) {
+      Score = G->C.TotalArea;
+      if (G->V.GoalReached)
+        Score -= G->V.EmptyCells;
+    }
+    snprintf(G->S.MsgBuf, OM_STRLEN,  "%d", Score);
   }
 
-  FullRowNum = r - w;
-
-  if ((int)FullRowNum > 0) {
-/*
-    for(; r < FieldSize ; r++, w++)
-      GlassRow[w] = GlassRow[r];
-*/
-
-    memmove(GlassRow + w, GlassRow + r, (FieldSize - r) * sizeof(int));
-
-    GlassHeight -= FullRowNum;
-    FieldSize -= FullRowNum;
-    GlassLevel -= FullRowNum;
+  if (isatty(fileno(stdout))) {
+    fprintf(stdout, "%s\n", G->S.MsgBuf);
+  } else {
+    ExportLua(G, stdout);
   }
 }
 
 
-static void Drop(struct Coord **FigN) {
-  unsigned int Top, Bottom, y;
+#define COPYRIGHT "Omnimino 0.6.1 Copyright (C) 2019-2024 Andrey Dobrovolsky\n\n"
+#define USAGE "Usage: omnimino infile\n       ls *.mino | omnimino > outfile\n\n"
 
-  CopyFigure(FigureBuf, FigN);
-  y = ForEachIn(FigureBuf, FindBottom, INT_MAX) & (~1);
 
-  if(Gravity){
-    Bottom = y >> 1;
-    if (SingleLayer) {
-      for (y = Bottom; y > 0; y--) {
-        ForEachIn(FigureBuf, AddY, -2);
-        if (Overlaps(FigureBuf)) {
-          ForEachIn(FigureBuf, AddY, 2);
-          break;
+int main(int argc,char *argv[]){
+  int argi;
+  char FName[OM_STRLEN + 1];
+
+  char *PName = basename(argv[0]);
+
+  struct Omnimino Game;
+  struct OmniParms PBuf;
+
+
+  InitGame(&Game);
+
+  if (strcmp(PName, "omnimino") == 0) {
+
+    if (argc > 1) {
+      for (argi = 1; argi < argc; argi++){
+        if (LoadGame(&Game, argv[argi]) == 0) {
+          if ((Game.V.GameType == 1) || (NewGame(&Game) == 0)) {
+            if (PlayGame(&Game))
+              SaveGame(&Game);
+          }
         }
+        Report(&Game);
       }
     } else {
-      ForEachIn(FigureBuf, AddY, -y);
-      for (y = 0; (y < Bottom) && Overlaps(FigureBuf); y++) {
-        ForEachIn(FigureBuf,AddY,2);
+      if (isatty(fileno(stdin))) {
+        fprintf(stdout, COPYRIGHT USAGE);
+      } else {
+        while (fscanf(stdin, "%" stringize(OM_STRLEN) "s%*[^\n]", FName) > 0) {
+          if (LoadGame(&Game, FName) == 0) {
+            if (Game.V.GameType == 1) {
+              Game.V.CurFigure = Game.D.NextFigure + 1;
+              GetGlassState(&Game);
+            }
+          }
+          Report(&Game);
+        }
+      }
+      fprintf(stdout, "MaxFigureSize = %d, MaxGlassWidth = %d, MaxGlassHeight = %d\n\n",
+                       MAX_FIGURE_SIZE,    MAX_GLASS_WIDTH,    MAX_GLASS_HEIGHT);
+    }
+
+    return 0;
+
+  }
+
+  if (argc > 1) {
+    if (LoadGame(&Game, argv[1]) == 0) {
+      if (Game.V.GameType == 2) {
+        PBuf = Game.P;
+
+        Game.P.Aperture = 0;
+        Game.P.Metric = 0;
+        Game.P.WeightMax = 1;
+        Game.P.WeightMin = 1;
+        Game.P.Gravity = 0;
+        Game.P.SingleLayer = 0;
+        Game.P.DiscardFullRows = 0;
+        Game.P.Goal = 0;
+        Game.P.FillLevel = 0;
+        Game.P.FillRatio = 0;
+        Game.P.FixedSequence = 0;
+
+        Game.C.TotalArea = Game.P.GlassWidth * Game.P.GlassHeightBuf;
+
+        if (NewGame(&Game) == 0) {
+          if (PlayGame(&Game)) {
+            Game.P = PBuf;
+            Game.P.FillLevel = Game.P.GlassHeightBuf;
+            while ((Game.P.FillLevel > 0) && (Game.M.GlassRow[Game.P.FillLevel - 1] == 0))
+              Game.P.FillLevel--;
+            memcpy(Game.M.FillBuf, Game.M.GlassRow, Game.P.FillLevel * sizeof(int));
+            Game.P.FillRatio = 0;
+            Game.V.GameType = 2;
+            SaveGame(&Game);
+            if (Game.V.GameType != 3)
+              return 0;
+          }
+        }
       }
     }
+    fprintf(stdout, "%s\n", Game.S.MsgBuf);
   } else {
-    y >>= 1;
+    fprintf(stdout, "\nUsage:  omnifill infile\n\n");
   }
 
-  ForEachIn(FigureBuf,PlaceIntoGlass,0);
-  EmptyCells -= ForEachIn(FigureBuf, CountInner, 0);
-  Top = (ForEachIn(FigureBuf, FindTop, INT_MIN) >> 1) + 1;
-  if (Top > GlassLevel)
-    GlassLevel = Top;
-  if (DiscardFullRows)
-    ClearFullRows(y, Top);
+  return 1;
+
 }
-
-
-static void Deploy(struct Coord **F) {
-  struct Coord C;
-
-  Normalize(F, &C);
-  ForEachIn(F, AddX, GlassWidth); /* impliciltly divided by 2 */
-  ForEachIn(F, AddY, ((GlassLevel + 1) << 1) + FigureSize);
-  GameModified = 1;
-}
-
-
-static void CheckGameState(void) {
-  switch(Goal){
-    case TOUCH_GOAL:
-      if ((ForEachIn(FigureBuf, FindBottom, INT_MAX) >> 1) == 0)
-        GoalReached = 1;
-      break;
-    case FLAT_GOAL:
-      if ((GlassLevel == 0) || (GlassRow[GlassLevel - 1] == FullRow))
-        GoalReached = 1;
-      break;
-    default:
-      if(EmptyCells == 0)
-        GoalReached = 1;
-  }
-
-  if(GoalReached || (GlassLevel > GlassHeight))
-    GameOver = 1;
-}
-
-
-static void RewindGlassState(void) {
-  unsigned int i;
-
-  for (i=0; i < FillLevel; i++)
-    GlassRow[i] = FillBuf[i];
-
-  GlassHeight=GlassHeightBuf;
-  FieldSize = GlassHeight + FigureSize + 1;
-
-  for (; i < FieldSize; i++)
-    GlassRow[i] = 0;
-
-  EmptyCells = TotalArea;
-  GlassLevel = FillLevel;
-  CurFigure = Figure;
-  FigureBuf = LastFigure + 1;
-  *FigureBuf = *LastFigure;
-  GameOver = 0;
-  GoalReached = 0;
-}
-
-
-void GetGlassState(struct Omnimino *G) {
-  GG = G;
-
-  if (CurFigure > NextFigure)
-    RewindGlassState();
-
-  while (CurFigure < NextFigure) {
-    if (!Placeable(CurFigure)) {
-      NextFigure = CurFigure;
-      LastTouched = CurFigure - 1;
-      break;
-    }
-    Drop(CurFigure++);
-    CheckGameState();
-    if (GameOver)
-      NextFigure = CurFigure;
-  }
-
-  if(CurFigure > LastTouched){
-    Deploy(CurFigure);
-    LastTouched = CurFigure;
-  }
-}
-
 

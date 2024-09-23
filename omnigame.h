@@ -1,6 +1,6 @@
-#ifndef _OMNIMINO_H
+#ifndef _OMNIGAME_H
 
-#define _OMNIMINO_H 1
+#define _OMNIGAME_H 1
 
 void FitGlass(struct Coord *B, int *Err);
 void AndGlass(struct Coord *B, int *Err);

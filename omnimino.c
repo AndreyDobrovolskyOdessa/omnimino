@@ -31,11 +31,8 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "omnitype.h"
-
 #include "omnigame.h"
 #include "omniload.h"
-#include "omniplay/omniplay.h"
 #include "omnisave.h"
 #include "omnilua.h"
 #include "omninew.h"
@@ -63,7 +60,7 @@ void Report(struct Omnimino *G) {
 }
 
 
-#define COPYRIGHT "Omnimino 0.6.1 Copyright (C) 2019-2024 Andrey Dobrovolsky\n\n"
+#define COPYRIGHT "Omnimino 0.6.3 Copyright (C) 2019-2024 Andrey Dobrovolsky\n\n"
 #define USAGE "Usage: omnimino infile\n       ls *.mino | omnimino > outfile\n\n"
 
 

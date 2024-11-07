@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "omnitype.h"
-
 #include "omnifunc.h"
 
 #include "omnimino.def"

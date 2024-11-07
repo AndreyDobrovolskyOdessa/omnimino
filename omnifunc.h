@@ -2,6 +2,8 @@
 
 #define _OMNIFUNC_H 1
 
+#include "omnitype.h"
+
 void ScaleUp(struct Coord *B,int *V);
 void FindLeft(struct Coord *B,int *V);
 void FindBottom(struct Coord *B,int *V);
@@ -21,6 +23,4 @@ void Normalize(struct Coord **F,struct Coord *C);
 struct Coord *CopyFigure(struct Coord **Dst, struct Coord **Src);
 int FindBlock(struct Coord *B, struct Coord *A, int Len);
 
-
 #endif
-

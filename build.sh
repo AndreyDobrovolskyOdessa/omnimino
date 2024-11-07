@@ -1,9 +1,14 @@
 #!/bin/sh
 
-CFLAGS="-Wall -Wextra -Wno-format-truncation $(pkg-config --cflags ncursesw)"
+CFLAGS="-O2 -Wall -Wextra\
+	-Wno-format-truncation\
+	-fno-asynchronous-unwind-tables\
+	$(pkg-config --cflags ncursesw)"
+
 LDFLAGS="$(pkg-config --libs ncursesw)"
 
-SOURCES="md5hash.c omnigame.c omnifunc.c omniload.c omnilua.c omninew.c omniplay/omniplay.c omnisave.c omnimino.c"
+SOURCES="md5hash.c omnigame.c omnifunc.c omniload.c omnilua.c omnimem.c\
+	omninew.c omnidraw/omnidraw.c omnisave.c omnimino.c"
 
 gcc $CFLAGS -o omnimino $SOURCES $LDFLAGS
 

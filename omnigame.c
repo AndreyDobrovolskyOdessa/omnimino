@@ -4,18 +4,19 @@
 #include <limits.h>
 
 #include "omnifunc.h"
-#include "omnigame.h"
+#include "omnidraw/omnidraw.h"
 
-/**************************************
-
-           Game
-
-**************************************/
 
 static struct Omnimino *GG;
 
 #include "omnimino.def"
 
+
+/**************************************
+
+        Various game functions
+
+**************************************/
 
 static void FitWidth(struct Coord *B, int *Err){
   (*Err) = (*Err) || (((B->x)>>1) < 0) || (((B->x)>>1) >= (int)GlassWidth);
@@ -45,11 +46,10 @@ static void CountInner(struct Coord *B, int *Cnt){
 }
 
 
-/**************************************
+#define FitsGlass(F) (ForEachIn(F, FitGlass, 0) == 0)
+#define Overlaps(F) (ForEachIn(F, AndGlass, 0) != 0)
+#define Placeable(F) (FitsGlass(F) && (!Overlaps(F)))
 
-        Various game functions
-
-**************************************/
 
 static void ClearFullRows(unsigned int From, unsigned int To) {
   unsigned int r, w, FullRowNum;
@@ -171,9 +171,9 @@ static void RewindGlassState(void) {
   GoalReached = 0;
 }
 
-
 void GetGlassState(struct Omnimino *G) {
-  GG = G;
+  if (G)
+    GG = G;
 
   if (CurFigure > NextFigure)
     RewindGlassState();
@@ -194,6 +194,192 @@ void GetGlassState(struct Omnimino *G) {
     Deploy(CurFigure);
     LastTouched = CurFigure;
   }
+}
+
+/**************************************
+
+           PlayGame
+
+**************************************/
+
+static int KeepPlaying;
+
+static void ExitWithSave(void){
+  KeepPlaying = 0;
+}
+
+static void ExitWithoutSave(void){
+  GameModified=0;
+  KeepPlaying = 0;
+}
+
+static void Attempt(bfunc F, int V) {
+  if (!GameOver) {
+    struct Coord C;
+
+    CopyFigure(FigureBuf, CurFigure);
+    Normalize(FigureBuf, &C);
+    ForEachIn(FigureBuf, F, V);
+    ForEachIn(FigureBuf, AddX, C.x);
+    ForEachIn(FigureBuf, AddY, C.y);
+    if(FitsGlass(FigureBuf) && ((!SingleLayer) || (!Overlaps(FigureBuf)))){
+      CopyFigure(CurFigure,FigureBuf);
+      LastTouched = CurFigure;
+      GameModified=1;
+    }
+  }
+}
+
+static void MoveCurLeft(void){
+  Attempt(AddX, -2);
+}
+
+static void MoveCurRight(void){
+  Attempt(AddX, 2);
+}
+
+static void MoveCurDown(void){
+  if (!Gravity)
+    Attempt(AddY, -2);
+}
+
+static void MoveCurUp(void){
+  if (!Gravity)
+    Attempt(AddY, 2);
+}
+
+static void RotateCurCW(void){
+  Attempt(RotCW, 0);
+}
+
+static void RotateCurCCW(void){
+  Attempt(RotCCW, 0);
+}
+
+static void MirrorCurVert(void){
+  Attempt(NegX, 0);
+}
+
+static void DropCur(void){
+  if((!GameOver) && Placeable(CurFigure)) {
+    NextFigure=CurFigure+1;
+  }
+}
+
+static void UndoFigure(void) {
+  if (CurFigure > Figure)
+    NextFigure = CurFigure - 1;
+}
+
+static void RedoFigure(void) {
+  if (CurFigure < LastTouched)
+    NextFigure = CurFigure + 1;
+}
+
+static void Rewind(void) {
+  NextFigure = Figure;
+}
+
+static void SkipForward(void) {
+  struct Coord **F;
+
+  if (!FixedSequence) {
+    CopyFigure(FigureBuf, CurFigure);
+    memmove(CurFigure[0], CurFigure[1], (LastFigure[0] - CurFigure[1]) * sizeof(struct Coord));
+    for (F = CurFigure + 1; F < LastFigure; F++)
+      F[0] = F[-1] + (F[1] - F[0]);
+    CopyFigure(LastFigure - 1, FigureBuf);
+
+    LastTouched = CurFigure - 1;
+  }
+}
+
+static void SkipBackward(void) {
+  struct Coord **F;
+
+  if (!FixedSequence) {
+    CopyFigure(FigureBuf, LastFigure - 1);
+    for (F = LastFigure - 1; F > CurFigure; F--)
+      F[0] = F[1] - (F[0] - F[-1]);
+    memmove(CurFigure[1], CurFigure[0], (LastFigure[0] - CurFigure[1]) * sizeof(struct Coord));
+    CopyFigure(CurFigure, FigureBuf);
+
+    LastTouched = CurFigure - 1;
+  }
+}
+
+static void LastPlayed(void) {
+  NextFigure = LastTouched;
+}
+
+static struct KBinding {
+  int Key;
+  void (*Action)(void);
+} KBindList[] = {
+  {'q', ExitWithoutSave},
+  {'x', ExitWithSave},
+  {'h', MoveCurLeft},
+  {'l', MoveCurRight},
+  {'k', MoveCurUp},
+  {'j', MoveCurDown},
+  {'a', RotateCurCCW},
+  {'f', RotateCurCW},
+  {'s', MirrorCurVert},
+  {'d', MirrorCurVert},
+  {' ', DropCur},
+  {'^', Rewind},
+  {'$', LastPlayed},
+
+  {'u', UndoFigure},
+  {'r', RedoFigure},
+
+  {'n', SkipForward},
+  {'N', SkipBackward},
+  {'p', SkipBackward},
+
+  {'*', RefreshScreen},
+
+  {0, NULL}
+};
+
+static int ExecuteCmd(void){
+  int Key;
+  struct KBinding *P;
+  void (*Func)(void);
+
+  KeepPlaying = 1;
+
+  do {
+    Key=ReadKey();
+    for(P=KBindList;((Func=(P->Action))!=NULL)&&(Key!=(P->Key));P++);
+  } while(Func==NULL);
+
+  (*Func)();
+
+  return KeepPlaying;
+}
+
+int PlayGame(struct Omnimino *G){
+
+  GG = G;
+
+  CurFigure = NextFigure + 1; /* forces RewindGlassState() */
+
+  OpenScreen();
+
+  do
+    GetGlassState(0);
+  while (ShowScreen(G) && ExecuteCmd());
+
+  CloseScreen();
+
+  if (GameModified) {
+    if ((GameType == 1) && (strcmp(ParentName, "none") == 0))
+      strcpy(ParentName, GameName);
+    GameType = 1;
+  }
+
+  return GameModified;
 }
 
 

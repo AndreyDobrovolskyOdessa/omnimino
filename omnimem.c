@@ -5,12 +5,9 @@
 
 #include "omnifunc.h"
 
-static struct Omnimino *GG;
-
 #include "omnimino.def"
 
-int AllocateBuffers(struct Omnimino *G) {
-  GG = G;
+int AllocateBuffers(struct Omnimino *GG) {
 
   /* Figure, Block, GlassRow = StoreBuf */
 

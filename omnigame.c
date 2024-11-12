@@ -172,8 +172,7 @@ static void RewindGlassState(void) {
 }
 
 void GetGlassState(struct Omnimino *G) {
-  if (G)
-    GG = G;
+  GG = G;
 
   if (CurFigure > NextFigure)
     RewindGlassState();
@@ -312,6 +311,10 @@ static void LastPlayed(void) {
   NextFigure = LastTouched;
 }
 
+static void RefreshScreen(void) {
+
+}
+
 static struct KBinding {
   int Key;
   void (*Action)(void);
@@ -368,7 +371,7 @@ int PlayGame(struct Omnimino *G){
   OpenScreen();
 
   do
-    GetGlassState(0);
+    GetGlassState(G);
   while (ShowScreen(G) && ExecuteCmd());
 
   CloseScreen();

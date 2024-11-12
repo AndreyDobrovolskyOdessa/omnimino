@@ -48,7 +48,7 @@ void OpenScreen(void) {
 }
 
 
-void RefreshScreen(void) {
+static void DeleteMyScr(void) {
   if (MyScr) {
     delwin(MyScr);
     MyScr = NULL;
@@ -58,7 +58,7 @@ void RefreshScreen(void) {
 
 void CloseScreen(void) {
   if (Screen) {
-    RefreshScreen();
+    DeleteMyScr();
     endwin();
     delscreen(Screen);
     Screen = NULL;
@@ -81,22 +81,12 @@ static void DrawGlass(int GlassRowN) {
   char RowImage[MAX_ROW_LEN];
   int RowWidth = (GlassWidth + THICKNESS) * 2;
   int Visible;
+  int Wall = GameOver ? (GoalReached ? WIN_SYM : LOOSE_SYM) : GOAL_SYM[Goal];
 
   Visible = (getmaxy(MyScr) * getmaxy(MyScr)) / (GlassRowN + 1);
 
   for (RowN = 0; RowN < getmaxy(MyScr); RowN++, GlassRowN--) {
-    int Sym;
-
-    if (GlassRowN >= (int)GlassHeight)
-      Sym = ' '; 
-    else if (!GameOver)
-      Sym = GOAL_SYM[Goal];
-    else if (!GoalReached)
-      Sym = LOOSE_SYM;
-    else
-      Sym = WIN_SYM;
-
-    memset(RowImage, Sym, RowWidth);
+    memset(RowImage, (GlassRowN < (int)GlassHeight) ? Wall : ' ', RowWidth);
     if ((GlassRowN >= 0) && (GlassRowN < (int)FieldSize))
       PutRowImage(GlassRow[GlassRowN], RowImage+THICKNESS, GlassWidth);
     if (RowN >= Visible)
@@ -230,7 +220,7 @@ int ReadKey(void) {
   case KEY_RIGHT:	Key = 'l'; break;
   case KEY_UP:		Key = 'k'; break;
   case KEY_DOWN:	Key = 'j'; break;
-  case KEY_RESIZE:	Key = '*'; break;
+  case KEY_RESIZE:	Key = '*'; DeleteMyScr(); break;
   }
 
   return Key;
